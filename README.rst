@@ -1,5 +1,7 @@
-==================================
-Namos - Device and Service Manager
-==================================
+===========================================
+Namos - an OpenStack Infrastructure Manager
+===========================================
 
-Namos provides device and service management for Openstack.
+For Openstack, Namos provides the similar functionalities of 'device manager' in traditional Operating System.
+
+Its being implemented and first stable version will be publihsed by 1st Aprit 2015
