@@ -1,7 +1,16 @@
-===========================================
-Namos - an OpenStack Infrastructure Manager
-===========================================
+===============================
+namos
+===============================
 
-For Openstack, Namos provides the similar functionalities of 'device manager' in traditional Operating System.
+OpenStack Service, Device manager
 
-More details at https://wiki.openstack.org/wiki/Namos
+* Free software: Apache license
+* Documentation: http://docs.openstack.org/developer/namos
+* Source: http://git.openstack.org/cgit/openstack/namos
+* Bugs: http://bugs.launchpad.net/soman
+* Wiki: https://wiki.openstack.org/wiki/Namos
+
+Features
+--------
+
+* Automatic discovery of OpenStack deployment architecture
