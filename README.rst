@@ -1,8 +1,6 @@
-===============================
-namos
-===============================
-
-OpenStack Service, Device manager
+=========================
+namos - OpenStack manager
+=========================
 
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/namos
