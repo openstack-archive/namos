@@ -105,8 +105,10 @@ if __name__ == '__main__':
     from oslo_context import context
 
     c = ConductorAPI()
-    c.add_region(context.RequestContext(),
-                 {'name': 'RegionOne11',
-                  'keystone_region_id': 'region_one',
-                  'extra': {'location': 'bangalore'},
-                  'id': 'd7dcd175-27ef-46b5-997f-e6e572f320af'})
+    # c.add_region(context.RequestContext(),
+    #              {'name': 'RegionOne11',
+    #               'keystone_region_id': 'region_one',
+    #               'extra': {'location': 'bangalore'},
+    #               'id': 'd7dcd175-27ef-46b5-997f-e6e572f320af'})
+
+    print (json.dumps(c.infra_perspective_get(context.RequestContext())))

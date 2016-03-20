@@ -56,17 +56,16 @@ _DRIVERS_CONFIG = {
     'rpc_backend':{
         'rabbit': {
             'endpoint': {
-                'name': 'rabbit_hosts',
+                'name': 'oslo_messaging_rabbit.rabbit_hosts',
                 'connection': {
-                    'rabbit_hosts': 'rabbit_hosts',
-                    'rabbit_port': 'rabbit_port',
-                    'rabbit_userid': 'rabbit_userid',
-                    'rabbit_password': 'rabbit_password',
-                    'control_exchange': 'control_exchange'
+                    'oslo_messaging_rabbit.rabbit_hosts': 'oslo_messaging_rabbit.rabbit_hosts',
+                    'oslo_messaging_rabbit.rabbit_port': 'oslo_messaging_rabbit.rabbit_port',
+                    'oslo_messaging_rabbit.rabbit_userid': 'oslo_messaging_rabbit.rabbit_userid',
+                    'oslo_messaging_rabbit.rabbit_password': 'oslo_messaging_rabbit.rabbit_password',
                 }
             },
             'device': {
-                'name': ['RPC_%s', (_get_rpc_name, 'control_exchange')]
+                'name': ['RPC_%s', (_get_rpc_name, 'oslo_messaging_rabbit.rabbit_hosts')]
             }
         },
         'nova.openstack.common.rpc.impl_kombu': {
@@ -182,6 +181,9 @@ _DRIVERS_CONFIG = {
             'device': {
                 'name': ['%s@%s', 'volume_group', 'host']
             }
+        },
+        'cinder.volume.drivers.lvm.LVMVolumeDriver': {
+            'alias': 'volume_driver:cinder.volume.drivers.lvm.LVMISCSIDriver'
         },
         'cinder.volume.drivers.lvm.LVMISERDriver': {
             'alias': 'volume_driver:cinder.volume.drivers.lvm.LVMISCSIDriver'
@@ -730,7 +732,10 @@ _DRIVERS_CONFIG = {
             'device': {
                 'name': ['OVS bridge %s', 'ovs_integration_bridge']
             }
-        }
+        },
+        'openvswitch': {
+            'alias': 'interface_driver:neutron.agent.linux.interface.OVSInterfaceDriver'
+        },
     },
     # 'extension_drivers': {
     #
@@ -1418,7 +1423,7 @@ _DRIVERS = {
     'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver': {
         'type': 'neutron'
     },
-    'nova.virt.firewall.NoopFirewallDriver' : {
+    'nova.virt.firewall.NoopFirewallDriver': {
         'type': 'neutron'
     },
     'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver': {

@@ -441,4 +441,4 @@ def _region_purge_demo_data():
 def purge_demo_data():
     _service_purge_demo_data()
     _device_purge_demo_data()
-    _region_purge_demo_data()
+    # _region_purge_demo_data()

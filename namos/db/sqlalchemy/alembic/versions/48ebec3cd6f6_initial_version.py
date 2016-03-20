@@ -50,7 +50,7 @@ def upgrade():
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('deleted_at', sa.DateTime(), nullable=True),
         sa.Column('extra', sa.Json(), nullable=True),
-        sa.Column('python_class', sa.String(length=64), nullable=False),
+        sa.Column('python_class', sa.String(length=256), nullable=False),
         sa.Column('version', sa.String(length=64), nullable=True),
         sa.Column('type', sa.String(length=64), nullable=False),
         sa.PrimaryKeyConstraint('id'),

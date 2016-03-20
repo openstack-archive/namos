@@ -28,13 +28,9 @@ conductor_opts = [
                default=1,
                help='Number of workers for conductor service. A single '
                     'conductor is enabled by default.'),
-    cfg.StrOpt('enabled_services',
-               default='namos,cinder,nova,keystone,horizon,heat,'
-                       'neutron,glance,swift,trove',
-               help='List of service exchanges to listen for'),
-    cfg.StrOpt('host',
+    cfg.StrOpt('name',
                default='namos-dev',
-               help='conductor host name'),
+               help='conductor name'),
 ]
 
 

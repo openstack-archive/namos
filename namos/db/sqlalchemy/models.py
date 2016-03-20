@@ -178,7 +178,7 @@ class DeviceDriverClass(BASE,
 
     # TODO(kanagaraj-manickam) Correct the max python class path here
     python_class = sqlalchemy.Column(
-        sqlalchemy.String(64),
+        sqlalchemy.String(256),
         nullable=False
     )
     # service type like compute, network, volume, etc

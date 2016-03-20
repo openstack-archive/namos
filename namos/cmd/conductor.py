@@ -24,7 +24,6 @@ eventlet.monkey_patch()
 
 from oslo_config import cfg
 from oslo_log import log
-import oslo_messaging
 from oslo_service import service as os_service
 
 from namos.common import config
@@ -42,19 +41,17 @@ def main():
     config.init_conf(CMD_NAME)
 
     from namos import conductor  # noqa
-    mgr = service.RPCService(CONF.conductor.host,
-                             config.PROJECT_NAME,
-                             manager.ConductorManager())
-    enabled_services = CONF.conductor.enabled_services
 
-    launcher = os_service.ProcessLauncher(CONF)
-    for srv in enabled_services.split(','):
-        LOG.info('Starting conductor for %s', srv)
-        oslo_messaging.set_transport_defaults(srv)
-        launcher.launch_service(mgr, CONF.conductor.workers)
+    mgr = service.RPCService(
+        CONF.conductor.name,
+        config.PROJECT_NAME,
+        manager.ConductorManager())
 
-    # namos.register_myself()
+    launcher = os_service.launch(CONF, mgr, CONF.conductor.workers)
+
     # TODO(mrkanag) Namos is not registering the RPC backend, fix it !
+    # namos.register_myself()
+
     launcher.wait()
 
 

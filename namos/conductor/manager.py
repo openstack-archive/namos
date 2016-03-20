@@ -50,8 +50,8 @@ class ConductorManager(object):
         # Move this try except to wrpper fn of the db layer
         try:
             db_api.region_create(context, region)
-        except Exception as e:
-            raise exception.NamosException(e)
+        except:  # noqa
+            raise exception.NamosException()
 
     @request_context
     def region_get_all(self, context):
@@ -59,8 +59,8 @@ class ConductorManager(object):
 
     @request_context
     def register_myself(self, context, registration_info):
-        LOG.info("REGISTERING %s.%s" % (registration_info['project_name'],
-                                        registration_info['prog_name']))
+        LOG.info("REGISTER [%s.%s] START" % (registration_info['project_name'],
+                                             registration_info['prog_name']))
 
         # Service processing
         sp = ServiceProcessor(registration_info)
@@ -70,6 +70,8 @@ class ConductorManager(object):
         dp = DriverProcessor(service_worker_id,
                              registration_info['config_dict'])
         dp.process_drivers(context)
+        LOG.info("REGISTER [%s.%s] DONE" % (registration_info['project_name'],
+                                            registration_info['prog_name']))
 
         return service_worker_id
 
@@ -274,10 +276,17 @@ class DriverProcessor(object):
 
     def process_drivers(self, context):
         for driver_key in self._identify_drivers():
-            drivers = self._get_value(driver_key)
-            drivers = DriverProcessor._to_list(drivers)
-            for driver_name in drivers:
-                self.process_driver(context, driver_key, driver_name)
+            try:
+                drivers = self._get_value(driver_key)
+                drivers = DriverProcessor._to_list(drivers)
+                for driver_name in drivers:
+                    self.process_driver(context, driver_key, driver_name)
+            except KeyError:  # noqa
+                # TODO(mrkanag) run namos-manager and restart nova-scheduler
+                # KeyError: 'libvirt.virt_type' is thrown, fix it
+                LOG.error('Failed to process driver %s in service worker %s' %
+                          (driver_key, self.service_worker_id))
+                continue
 
     def process_driver(self, context, driver_key, driver_name):
             driver_config = \
