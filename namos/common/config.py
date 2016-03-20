@@ -19,8 +19,27 @@ import namos
 
 PROJECT_NAME = 'namos'
 VERSION = namos.__version__
-
+MESSAGE_QUEUE_CONDUCTOR_TOPIC = '%s.conductor' % PROJECT_NAME
 CONF = cfg.CONF
+
+
+conductor_opts = [
+    cfg.IntOpt('workers',
+               default=1,
+               help='Number of workers for conductor service. A single '
+                    'conductor is enabled by default.'),
+    cfg.StrOpt('enabled_services',
+               default='namos,cinder,nova,keystone,horizon,heat,'
+                       'neutron,glance,swift,trove',
+               help='List of service exchanges to listen for'),
+    cfg.StrOpt('host',
+               default='namos-dev',
+               help='conductor host name'),
+]
+
+
+def register_conductor_opts():
+    CONF.register_opts(conductor_opts, 'conductor')
 
 
 def init_conf(prog):
@@ -29,8 +48,8 @@ def init_conf(prog):
          prog=prog)
 
 
-def setup_log(prog=PROJECT_NAME):
+def init_log(project=PROJECT_NAME):
     logging.register_options(cfg.CONF)
     logging.setup(cfg.CONF,
-                  prog,
+                  project,
                   version=VERSION)
