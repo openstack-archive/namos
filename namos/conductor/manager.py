@@ -184,7 +184,10 @@ class ServiceProcessor(object):
                     context,
                     service_workers[0].id,
                     dict(
-                        pid=self.registration_info['pid']))
+                        pid=self.registration_info['pid'],
+                        name='%s@%s' % (self.registration_info['pid'],
+                                        service_component.name)
+                    ))
             LOG.info('Service Worker %s is existing and is updated'
                      % service_worker)
 
