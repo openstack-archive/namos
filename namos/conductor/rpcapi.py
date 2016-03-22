@@ -96,6 +96,18 @@ class ConductorAPI(object):
         return self.client.call(context,
                                 'infra_perspective_get')
 
+    @wrapper_function
+    def config_get_by_name_for_service_worker(self,
+                                              context,
+                                              service_worker_id,
+                                              name=None,
+                                              only_configured=True):
+        return self.client.call(context,
+                                'config_get_by_name_for_service_worker',
+                                service_worker_id=service_worker_id,
+                                name=name,
+                                only_configured=only_configured)
+
 if __name__ == '__main__':
     # from namos.common import config
 
@@ -105,10 +117,21 @@ if __name__ == '__main__':
     from oslo_context import context
 
     c = ConductorAPI()
-    # c.add_region(context.RequestContext(),
-    #              {'name': 'RegionOne11',
-    #               'keystone_region_id': 'region_one',
-    #               'extra': {'location': 'bangalore'},
-    #               'id': 'd7dcd175-27ef-46b5-997f-e6e572f320af'})
 
-    print (json.dumps(c.infra_perspective_get(context.RequestContext())))
+    def add_sample_region():
+        c.add_region(context.RequestContext(),
+                     {'name': 'RegionOne11',
+                      'keystone_region_id': 'region_one',
+                      'extra': {'location': 'bangalore'},
+                      'id': 'd7dcd175-27ef-46b5-997f-e6e572f320af'})
+
+    def print_infra():
+        print (json.dumps(c.infra_perspective_get(context.RequestContext())))
+
+    def print_sample_conf():
+        for cf in c.config_get_by_name_for_service_worker(
+            context.RequestContext(),
+            service_worker_id='fc88fd41-7e9c-42c9-891d-3823efd4824e'):
+            print ('%s %s' % (cf['name'], cf['value']))
+
+    print_sample_conf()

@@ -519,11 +519,15 @@ def config_get_by_name(context, name):
 
 def config_get_by_name_for_service_worker(context,
                                           service_worker_id,
-                                          name=None):
+                                          name=None,
+                                          only_configured=True):
     query = _model_query(context, models.OsloConfig). \
         filter_by(service_worker_id=service_worker_id)
     if name is not None:
         query = query.filter_by(name=name)
+    elif only_configured:
+        query = query.filter(
+            models.OsloConfig.value != models.OsloConfig.default_value)
     return query.all()
 
 

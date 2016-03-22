@@ -328,10 +328,12 @@ def config_get_by_name(context, name):
 
 def config_get_by_name_for_service_worker(context,
                                           service_worker_id,
-                                          name=None):
+                                          name=None,
+                                          only_configured=True):
     return IMPL.config_get_by_name_for_service_worker(context,
                                                       service_worker_id,
-                                                      name)
+                                                      name,
+                                                      only_configured)
 
 
 def config_get_all(context):
