@@ -97,6 +97,11 @@ class ConductorAPI(object):
                                 'infra_perspective_get')
 
     @wrapper_function
+    def view_360(self, context):
+        return self.client.call(context,
+                                'view_360')
+
+    @wrapper_function
     def config_get_by_name_for_service_worker(self,
                                               context,
                                               service_worker_id,
@@ -128,10 +133,14 @@ if __name__ == '__main__':
     def print_infra():
         print (json.dumps(c.infra_perspective_get(context.RequestContext())))
 
+    def print_view_360():
+        print (json.dumps(c.view_360(context.RequestContext())))
+
     def print_sample_conf():
         for cf in c.config_get_by_name_for_service_worker(
             context.RequestContext(),
-            service_worker_id='fc88fd41-7e9c-42c9-891d-3823efd4824e'):
+            service_worker_id='06e64e74-09b3-4721-8e5d-39ae40ed34f3'):
             print ('%s %s' % (cf['name'], cf['value']))
 
-    print_sample_conf()
+    print_view_360()
+    # print_sample_conf()

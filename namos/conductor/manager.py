@@ -107,6 +107,10 @@ class ConductorManager(object):
         return db_api.infra_perspective_get(context)
 
     @request_context
+    def view_360(self, context):
+        return db_api.view_360(context)
+
+    @request_context
     def config_get_by_name_for_service_worker(self,
                                               context,
                                               service_worker_id,
@@ -116,6 +120,7 @@ class ConductorManager(object):
                                                             service_worker_id,
                                                             name,
                                                             only_configured)
+
 
 class ServiceProcessor(object):
     def __init__(self, registration_info):

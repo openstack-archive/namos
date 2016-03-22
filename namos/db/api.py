@@ -367,3 +367,7 @@ def region_perspective_get(context, region_id,
 
 def infra_perspective_get(context):
     return IMPL.infra_perspective_get(context)
+
+
+def view_360(context):
+    return IMPL.view_360(context)

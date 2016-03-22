@@ -772,6 +772,133 @@ def infra_perspective_get(context):
 
     return infra_perspective
 
+
+def view_360(context):
+    view = dict()
+
+    view['region'] = dict()
+    view['service_node'] = dict()
+    view['service_component'] = dict()
+    view['service'] = dict()
+    view['service_worker'] = dict()
+    view['device_driver'] = dict()
+    view['device_driver_class'] = dict()
+    view['device_endpoint'] = dict()
+    view['device'] = dict()
+
+    region_list = region_get_all(context)
+    for rg in region_list:
+        # region
+        view['region'][rg.id] = region_get(context, rg.id).to_dict()
+
+        view['region'][rg.id]['service_node'] = dict()
+        srv_nd_lst = _service_node_get_all_by(context,
+                                              region_id=rg.id)
+        for srv_nd in srv_nd_lst:
+            # service node
+            view['service_node'][srv_nd.id] = service_node_get(
+                context,
+                srv_nd.id
+            ).to_dict()
+
+            view['region'][rg.id]['service_node'][srv_nd.id] = dict()
+            view['region'][rg.id]['service_node'][srv_nd.id][
+                'service_component'] = dict()
+            srv_cmp_lst = service_component_get_all_by_node_for_service(
+                context,
+                srv_nd.id
+            )
+            for srv_cmp in srv_cmp_lst:
+                # service component
+                view['service_component'][
+                    srv_cmp.id] = service_component_get(context,
+                                                        srv_cmp.id).to_dict()
+
+                # service
+                srv_id = view['service_component'][srv_cmp.id]['service_id']
+                if srv_id not in view['service']:
+                    view['service'][srv_id] = service_get(context,
+                                                          srv_id).to_dict()
+
+                view['region'][rg.id]['service_node'][srv_nd.id][
+                    'service_component'][srv_cmp.id] = dict()
+                view['region'][rg.id]['service_node'][srv_nd.id][
+                    'service_component'][srv_cmp.id]['service'] = srv_id
+                view['region'][rg.id]['service_node'][srv_nd.id][
+                    'service_component'][srv_cmp.id][
+                    'service_worker'] = dict()
+                srv_wkr_lst = service_worker_get_by_host_for_service_component(
+                    context,
+                    srv_cmp.id
+                )
+                for srv_wkr in srv_wkr_lst:
+                    # service worker
+                    view['service_worker'][
+                        srv_wkr.id] = service_worker_get(context,
+                                                         srv_wkr.id).to_dict()
+
+                    view['region'][rg.id]['service_node'][srv_nd.id][
+                        'service_component'][srv_cmp.id][
+                        'service_worker'][srv_wkr.id] = dict()
+                    view['region'][rg.id]['service_node'][srv_nd.id][
+                        'service_component'][srv_cmp.id][
+                        'service_worker'][srv_wkr.id]['device_driver'] = dict()
+                    dvc_drv_list = _device_driver_get_all_by(
+                        context,
+                        service_worker_id=srv_wkr.id
+                    )
+                    for dvc_drv in dvc_drv_list:
+                        # device driver
+                        view['device_driver'][
+                            dvc_drv.id] = device_driver_get(
+                            context,
+                            dvc_drv.id).to_dict()
+
+                        view['region'][rg.id]['service_node'][srv_nd.id][
+                            'service_component'][srv_cmp.id][
+                            'service_worker'][srv_wkr.id]['device_driver'][
+                            dvc_drv.id] = dict()
+
+                        # device driver class
+                        dvc_drv_cls_id = view['device_driver'][
+                            dvc_drv.id]['device_driver_class_id']
+                        if dvc_drv_cls_id not in view['device_driver_class']:
+                            view['device_driver_class'][
+                                dvc_drv_cls_id] = device_driver_class_get(
+                                context,
+                                dvc_drv_cls_id).to_dict()
+                        view['region'][rg.id]['service_node'][srv_nd.id][
+                            'service_component'][srv_cmp.id][
+                            'service_worker'][srv_wkr.id]['device_driver'][
+                            dvc_drv.id]['device_driver_class'] = dvc_drv_cls_id
+
+                        # device endpoint
+                        dvc_endp_id = view['device_driver'][
+                            dvc_drv.id]['endpoint_id']
+                        view['device_endpoint'][
+                            dvc_endp_id] = device_endpoint_get(
+                            context,
+                            dvc_endp_id).to_dict()
+                        view['region'][rg.id]['service_node'][srv_nd.id][
+                            'service_component'][srv_cmp.id][
+                            'service_worker'][srv_wkr.id]['device_driver'][
+                            dvc_drv.id]['device_endpoint'] = dvc_endp_id
+
+                        # device
+                        dvc_id = view['device_driver'][
+                            dvc_drv.id]['device_id']
+                        if dvc_id not in view['device']:
+                            view['device'][
+                                dvc_id] = device_get(
+                                context,
+                                dvc_id).to_dict()
+                            view['region'][rg.id]['service_node'][srv_nd.id][
+                                'service_component'][srv_cmp.id][
+                                'service_worker'][srv_wkr.id]['device_driver'][
+                                dvc_drv.id]['device'] = dvc_id
+
+    return view
+
 if __name__ == '__main__':
     from namos.common import config
 
@@ -796,3 +923,6 @@ if __name__ == '__main__':
     # import json
     # perp_json = json.dumps(persp, indent=4)
     # print perp_json
+
+    import json
+    print (json.dumps(view_360(None)))
