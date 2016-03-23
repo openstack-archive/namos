@@ -344,6 +344,40 @@ def config_delete(context, _id):
     return IMPL.config_delete(context, _id)
 
 
+def config_file_create(context, values):
+    return IMPL.config_file_create(context, values)
+
+
+def config_file_update(context, _id, values):
+    return IMPL.config_file_update(context, _id, values)
+
+
+def config_file_get(context, _id):
+    return IMPL.config_file_get(context, _id)
+
+
+def config_file_get_by_name(context, name):
+    return IMPL.config_file_get_by_name(context, name)
+
+
+def config_file_get_by_name_for_service_component(
+        context,
+        service_component_id,
+        name=None):
+    return IMPL.config_file_get_by_name_for_service_component(
+        context,
+        service_component_id,
+        name)
+
+
+def config_file_get_all(context):
+    return IMPL.config_file_get_all(context)
+
+
+def config_file_delete(context, _id):
+    return IMPL.config_file_delete(context, _id)
+
+
 def service_perspective_get(context, service_id,
                             include_details=False):
     return IMPL.service_perspective_get(context,

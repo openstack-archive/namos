@@ -184,6 +184,33 @@ class ServiceProcessor(object):
                          service_component)
             # TODO(mrkanag) what to do when service_components size is > 1
 
+        # config file
+        for cfg_f in self.registration_info['config_file_list']:
+            try:
+                config_file = db_api.config_file_create(
+                    context,
+                    dict(name=cfg_f,
+                         file=self.registration_info[
+                             'config_file_dict'][cfg_f],
+                         service_component_id=service_component.id))
+                LOG.info('Oslo config file %s is created' % config_file)
+            except exception.AlreadyExist:
+                config_files = \
+                    db_api.config_file_get_by_name_for_service_component(
+                        context,
+                        service_component_id=service_component.id,
+                        name=cfg_f
+                    )
+                if len(config_files) == 1:
+                    config_file = \
+                        db_api.config_file_update(
+                            context,
+                            config_files[0].id,
+                            dict(file=self.registration_info[
+                                'config_file_dict'][cfg_f]))
+                    LOG.info('Oslo config file %s is existing and is updated'
+                             % config_file)
+
         # Service Worker
         try:
             service_worker = db_api.service_worker_create(

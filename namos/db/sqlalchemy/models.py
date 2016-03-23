@@ -330,3 +330,27 @@ class OsloConfig(BASE,
         sqlalchemy.ForeignKey('service_worker.id'),
         nullable=False
     )
+
+
+class OsloConfigFile(BASE,
+                     NamosBase,
+                     SoftDelete,
+                     Extra):
+    __tablename__ = 'oslo_config_file'
+    __table_args__ = (
+        UniqueConstraint("name", "service_component_id"),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
+    file = sqlalchemy.Column(
+        sqlalchemy.Text
+    )
+    service_component_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('service_component.id'),
+        nullable=False
+    )

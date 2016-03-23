@@ -125,3 +125,8 @@ class ServiceWorkerNotFound(NotFound):
 class ConfigNotFound(NotFound):
     msg_fmt = ("Config %(config_id)s does not found")
     error_code = 0x0a001
+
+
+class ConfigFileNotFound(NotFound):
+    msg_fmt = ("Config file %(config_file_id)s does not found")
+    error_code = 0x0b001

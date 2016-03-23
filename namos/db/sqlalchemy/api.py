@@ -548,6 +548,55 @@ def config_delete(context, _id):
     return _delete(context, models.OsloConfig, _id)
 
 
+# Config file
+def config_file_create(context, values):
+    return _create(context, models.OsloConfigFile(), values)
+
+
+def config_file_update(context, _id, values):
+    return _update(context, models.OsloConfigFile, _id, values)
+
+
+def config_file_get(context, _id):
+    config = _get(context, models.OsloConfigFile, _id)
+    if config is None:
+        raise exception.ConfigFileNotFound(config_file_id=_id)
+
+    return config
+
+
+def config_file_get_by_name(context, name):
+    config = _get_by_name(context, models.OsloConfigFile, name)
+    if config is None:
+        raise exception.ConfigFileNotFound(config_file_id=name)
+
+    return config
+
+
+def config_file_get_by_name_for_service_component(
+        context,
+        service_component_id,
+        name=None):
+    query = _model_query(context, models.OsloConfigFile). \
+        filter_by(service_component_id=service_component_id)
+    if name is not None:
+        query = query.filter_by(name=name)
+
+    return query.all()
+
+
+def config_file_get_all(context):
+    return _get_all(context, models.OsloConfigFile)
+
+
+def _config_file_get_all_by(context, **kwargs):
+    return _get_all_by(context, models.OsloConfigFile, **kwargs)
+
+
+def config_file_delete(context, _id):
+    return _delete(context, models.OsloConfigFile, _id)
+
+
 # REST-API
 def service_perspective_get(context, service_id, include_details=False):
     # 1. itr over Service Components and find name vs set of components
@@ -827,6 +876,18 @@ def view_360(context):
 
                 view['region'][rg.id]['service_node'][srv_nd.id][
                     'service_component'][srv_cmp.id] = dict()
+                view['region'][rg.id]['service_node'][srv_nd.id][
+                    'service_component'][srv_cmp.id]['config_file'] = dict()
+                cfg_fl_lst = config_file_get_by_name_for_service_component(
+                    context,
+                    service_component_id=srv_cmp.id
+                )
+                for cfg_fl in cfg_fl_lst:
+                    # config file
+                    view['region'][rg.id]['service_node'][srv_nd.id][
+                        'service_component'][srv_cmp.id][
+                        'config_file'][cfg_fl.name] = cfg_fl.file
+
                 view['region'][rg.id]['service_node'][srv_nd.id][
                     'service_component'][srv_cmp.id]['service'] = srv_id
                 view['region'][rg.id]['service_node'][srv_nd.id][
