@@ -129,12 +129,6 @@ class ServiceProcessor(object):
     def process_service(self, context):
         # Service Node
         try:
-            # TODO(mrkanag) is this to be region specifc search
-            node = db_api.service_node_get_by_name(
-                context,
-                self.registration_info.get('fqdn'))
-            LOG.info('Service node %s is existing' % node)
-        except exception.ServiceNodeNotFound:
             # TODO(mrkanag) region_id is hard-coded, fix it !
             # user proper node name instead of fqdn
             node = db_api.service_node_create(
@@ -144,14 +138,15 @@ class ServiceProcessor(object):
                      region_id='f7dcd175-27ef-46b5-997f-e6e572f320b0'))
 
             LOG.info('Service node %s is created' % node)
+        except exception.AlreadyExist:
+            # TODO(mrkanag) is this to be region specifc search
+            node = db_api.service_node_get_by_name(
+                context,
+                self.registration_info.get('fqdn'))
+            LOG.info('Service node %s is existing' % node)
 
         # Service
         try:
-            service = db_api.service_get_by_name(
-                context,
-                self.registration_info.get('project_name'))
-            LOG.info('Service %s is existing' % service)
-        except exception.ServiceNotFound:
             s_id = 'b9c2549f-f685-4bc2-92e9-ba8af9c18591'
             service = db_api.service_create(
                 context,
@@ -161,53 +156,36 @@ class ServiceProcessor(object):
                      keystone_service_id=s_id))
 
             LOG.info('Service %s is created' % service)
+        except exception.AlreadyExist:
+            service = db_api.service_get_by_name(
+                context,
+                self.registration_info.get('project_name'))
+            LOG.info('Service %s is existing' % service)
 
         # Service Component
-        service_components = \
-            db_api.service_component_get_all_by_node_for_service(
-                context,
-                node_id=node.id,
-                service_id=service.id,
-                name=self.registration_info['prog_name']
-            )
-        if len(service_components) == 1:
-            service_component = service_components[0]
-            LOG.info('Service Component %s is existing' % service_component)
-        # TODO(mrkanag) what to do when service_components size is > 1
-        else:
+        try:
             service_component = db_api.service_component_create(
                 context,
                 dict(name=self.registration_info['prog_name'],
                      node_id=node.id,
                      service_id=service.id))
             LOG.info('Service Component %s is created' % service_component)
+        except exception.AlreadyExist:
+            service_components = \
+                db_api.service_component_get_all_by_node_for_service(
+                    context,
+                    node_id=node.id,
+                    service_id=service.id,
+                    name=self.registration_info['prog_name']
+                )
+            if len(service_components) == 1:
+                service_component = service_components[0]
+                LOG.info('Service Component %s is existing' %
+                         service_component)
+            # TODO(mrkanag) what to do when service_components size is > 1
 
         # Service Worker
-        # TODO(mrkanag) Find a way to purge the dead service worker
-        # Once each service  is enabled with heart beating namos
-        # purging can be done once heart beat stopped. this can be
-        # done from openstack.common.service.py
-        service_workers = \
-            db_api.service_worker_get_by_host_for_service_component(
-                context,
-                service_component_id=service_component.id,
-                host=self.registration_info['host']
-            )
-        if len(service_workers) == 1:
-            service_worker = \
-                db_api.service_worker_update(
-                    context,
-                    service_workers[0].id,
-                    dict(
-                        pid=self.registration_info['pid'],
-                        name='%s@%s' % (self.registration_info['pid'],
-                                        service_component.name)
-                    ))
-            LOG.info('Service Worker %s is existing and is updated'
-                     % service_worker)
-
-        # TODO(mrkanag) what to do when service_workers size is > 1
-        else:
+        try:
             service_worker = db_api.service_worker_create(
                 context,
                 # TODO(mrkanag) Fix the name, device driver proper !
@@ -217,6 +195,31 @@ class ServiceProcessor(object):
                      host=self.registration_info['host'],
                      service_component_id=service_component.id))
             LOG.info('Service Worker %s is created' % service_worker)
+        except exception.AlreadyExist:
+            # TODO(mrkanag) Find a way to purge the dead service worker
+            # Once each service  is enabled with heart beating namos
+            # purging can be done once heart beat stopped. this can be
+            # done from openstack.common.service.py
+            service_workers = \
+                db_api.service_worker_get_by_host_for_service_component(
+                    context,
+                    service_component_id=service_component.id,
+                    host=self.registration_info['host']
+                )
+            if len(service_workers) == 1:
+                service_worker = \
+                    db_api.service_worker_update(
+                        context,
+                        service_workers[0].id,
+                        dict(
+                            pid=self.registration_info['pid'],
+                            name='%s@%s' % (self.registration_info['pid'],
+                                            service_component.name)
+                        ))
+                LOG.info('Service Worker %s is existing and is updated'
+                         % service_worker)
+
+            # TODO(mrkanag) what to do when service_workers size is > 1
 
         # Config
         # TODO(mrkanag) Optimize the config like per service_component
@@ -224,18 +227,20 @@ class ServiceProcessor(object):
         for cfg_name, cfg_obj in self.registration_info[
             'config_dict'].iteritems():
             cfg_obj['service_worker_id'] = service_worker.id
-            configs = db_api.config_get_by_name_for_service_worker(
-                context,
-                service_worker_id=cfg_obj['service_worker_id'],
-                name=cfg_obj['name'])
-            if len(configs) == 1:
-                config = db_api.config_update(context,
-                                              configs[0].id,
-                                              cfg_obj)
-                LOG.info("Config %s is existing and is updated" % config)
-            else:
+
+            try:
                 config = db_api.config_create(context, cfg_obj)
                 LOG.info("Config %s is created" % config)
+            except exception.AlreadyExist:
+                configs = db_api.config_get_by_name_for_service_worker(
+                    context,
+                    service_worker_id=cfg_obj['service_worker_id'],
+                    name=cfg_obj['name'])
+                if len(configs) == 1:
+                    config = db_api.config_update(context,
+                                                  configs[0].id,
+                                                  cfg_obj)
+                    LOG.info("Config %s is existing and is updated" % config)
 
         return service_worker.id
 
@@ -367,11 +372,6 @@ class DriverProcessor(object):
             # Device
             device_name = self._get_value(device_cfg['name'])
             try:
-                device = db_api.device_get_by_name(
-                    context,
-                    device_name)
-                LOG.info('Device %s is existing' % device)
-            except exception.DeviceNotFound:
                 # TODO(mrkanag) region_id is hard-coded, fix it !
                 # Set the right status as well
                 device = db_api.device_create(
@@ -381,8 +381,13 @@ class DriverProcessor(object):
                          region_id='f7dcd175-27ef-46b5-997f-e6e572f320b0'))
 
                 LOG.info('Device %s is created' % device)
+            except exception.AlreadyExist:
+                device = db_api.device_get_by_name(
+                    context,
+                    device_name)
+                LOG.info('Device %s is existing' % device)
 
-            # Handle child devices
+            # TODO(mrkanag) Poperly Handle child devices
             if child_device_cfg is not None:
                 for d_name in self._get_value(child_device_cfg['key']):
                     base_name = self._get_value(child_device_cfg['base_name'])
@@ -406,16 +411,7 @@ class DriverProcessor(object):
                 LOG.info('Device %s is created' % device)
 
             # Device Endpoint
-            device_endpoints = db_api.device_endpoint_get_by_device_type(
-                context,
-                device_id=device.id,
-                type=endpoint_type,
-                name=device_endpoint_name)
-            if len(device_endpoints) >= 1:
-                device_endpoint = device_endpoints[0]
-                LOG.info('Device Endpoint %s is existing' %
-                         device_endpoints[0])
-            else:
+            try:
                 for k, v in connection_cfg.iteritems():
                     connection[k] = self._get_value(k)
 
@@ -426,15 +422,19 @@ class DriverProcessor(object):
                          type=endpoint_type,
                          device_id=device.id))
                 LOG.info('Device Endpoint %s is created' % device_endpoint)
+            except exception.AlreadyExist:
+                device_endpoints = db_api.device_endpoint_get_by_device_type(
+                    context,
+                    device_id=device.id,
+                    type=endpoint_type,
+                    name=device_endpoint_name)
+                if len(device_endpoints) >= 1:
+                    device_endpoint = device_endpoints[0]
+                    LOG.info('Device Endpoint %s is existing' %
+                             device_endpoints[0])
 
             # Device Driver Class
             try:
-                device_driver_class = db_api.device_driver_class_get_by_name(
-                    context,
-                    driver_name)
-                LOG.info('Device Driver Class %s is existing' %
-                         device_driver_class)
-            except exception.DeviceDriverClassNotFound:
                 device_driver_class = db_api.device_driver_class_create(
                     context,
                     dict(name=driver_name,
@@ -446,21 +446,15 @@ class DriverProcessor(object):
                          extra=driver_def.get('extra')))
                 LOG.info('Device Driver Class %s is created' %
                          device_driver_class)
+            except exception.AlreadyExist:
+                device_driver_class = db_api.device_driver_class_get_by_name(
+                    context,
+                    driver_name)
+                LOG.info('Device Driver Class %s is existing' %
+                         device_driver_class)
 
             # Device Driver
-            device_drivers = \
-                db_api.device_driver_get_by_device_endpoint_service_worker(
-                    context,
-                    device_id=device.id,
-                    endpoint_id=device_endpoint.id,
-                    device_driver_class_id=device_driver_class.id,
-                    service_worker_id=self.service_worker_id
-                )
-            if len(device_drivers) >= 1:
-                device_driver = device_drivers[0]
-                LOG.info('Device Driver %s is existing' %
-                         device_driver)
-            else:
+            try:
                 device_driver = db_api.device_driver_create(
                     context,
                     dict(device_id=device.id,
@@ -471,6 +465,19 @@ class DriverProcessor(object):
                 )
                 LOG.info('Device Driver %s is created' %
                          device_driver)
+            except exception.AlreadyExist:
+                device_drivers = \
+                    db_api.device_driver_get_by_device_endpoint_service_worker(
+                        context,
+                        device_id=device.id,
+                        endpoint_id=device_endpoint.id,
+                        device_driver_class_id=device_driver_class.id,
+                        service_worker_id=self.service_worker_id
+                    )
+                if len(device_drivers) >= 1:
+                    device_driver = device_drivers[0]
+                    LOG.info('Device Driver %s is existing' %
+                             device_driver)
 
 
 if __name__ == '__main__':

@@ -63,6 +63,12 @@ class NotFound(NamosException):
     http_status_code = 404
 
 
+class AlreadyExist(NamosException):
+    msg_fmt = ("%(model)s  %(name)s already exists")
+    error_code = 0x01002
+    http_status_code = 403
+
+
 class RegionNotFound(NotFound):
     msg_fmt = ("Region %(region_id)s does not found")
     error_code = 0x01001

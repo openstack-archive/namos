@@ -18,6 +18,7 @@ SQLAlchemy models for namos database
 
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import UniqueConstraint
 import uuid
 
 from namos.db.sqlalchemy.types import Json
@@ -37,7 +38,7 @@ class NamosBase(models.ModelBase,
     id = sqlalchemy.Column(Uuid, primary_key=True,
                            default=lambda: str(uuid.uuid4()))
     name = sqlalchemy.Column(sqlalchemy.String(255),
-                             # unique=True,
+                             unique=True,
                              nullable=False,
                              default=lambda: str(uuid.uuid4()))
 
@@ -128,6 +129,9 @@ class DeviceEndpoint(BASE,
                      Extra):
     __tablename__ = 'device_endpoint'
 
+    __table_args__ = (
+        UniqueConstraint("device_id", "type"),
+    )
     device_id = sqlalchemy.Column(
         Uuid,
         sqlalchemy.ForeignKey('device.id'),
@@ -145,6 +149,12 @@ class DeviceDriver(BASE,
                    SoftDelete,
                    Extra):
     __tablename__ = 'device_driver'
+    __table_args__ = (
+        UniqueConstraint("device_id",
+                         "endpoint_id",
+                         "device_driver_class_id",
+                         "service_worker_id"),
+    )
 
     endpoint_id = sqlalchemy.Column(
         Uuid,
@@ -179,7 +189,8 @@ class DeviceDriverClass(BASE,
     # TODO(kanagaraj-manickam) Correct the max python class path here
     python_class = sqlalchemy.Column(
         sqlalchemy.String(256),
-        nullable=False
+        nullable=False,
+        unique=True
     )
     # service type like compute, network, volume, etc
     type = sqlalchemy.Column(
@@ -225,6 +236,15 @@ class ServiceComponent(BASE,
                        Extra):
     __tablename__ = 'service_component'
 
+    __table_args__ = (
+        UniqueConstraint("name", "node_id", "service_id"),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
     node_id = sqlalchemy.Column(
         Uuid,
         sqlalchemy.ForeignKey('service_node.id'),
@@ -240,6 +260,15 @@ class ServiceWorker(BASE,
                     SoftDelete,
                     Extra):
     __tablename__ = 'service_worker'
+
+    __table_args__ = (
+        UniqueConstraint("host", "service_component_id"),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
 
     pid = sqlalchemy.Column(
         sqlalchemy.String(32),
@@ -261,9 +290,18 @@ class OsloConfig(BASE,
                  Extra):
     __tablename__ = 'oslo_config'
 
+    __table_args__ = (
+        UniqueConstraint("name", "service_worker_id"),
+    )
+
     default_value = sqlalchemy.Column(
         sqlalchemy.Text
     )
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
     help = sqlalchemy.Column(
         sqlalchemy.Text,
         nullable=False,

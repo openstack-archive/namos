@@ -50,7 +50,8 @@ def main():
     launcher = os_service.launch(CONF, mgr, CONF.conductor.workers)
 
     # TODO(mrkanag) Namos is not registering the RPC backend, fix it !
-    # namos.register_myself()
+    import os_namos
+    os_namos.register_myself()
 
     launcher.wait()
 

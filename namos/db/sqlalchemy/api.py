@@ -16,6 +16,7 @@
 import sys
 
 from oslo_config import cfg
+from oslo_db import exception as db_exception
 from oslo_db.sqlalchemy import session as db_session
 
 from namos.common import exception
@@ -57,7 +58,11 @@ def _session(context):
 
 def _create(context, resource_ref, values):
     resource_ref.update(values)
-    resource_ref.save(_session(context))
+    try:
+        resource_ref.save(_session(context))
+    except db_exception.DBDuplicateEntry:
+        raise exception.AlreadyExist(model=resource_ref.__class__.__name__,
+                                     name=resource_ref.name)
     return resource_ref
 
 
