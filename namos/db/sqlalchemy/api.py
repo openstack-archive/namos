@@ -488,12 +488,68 @@ def service_worker_get_all(context):
     return _get_all(context, models.ServiceWorker)
 
 
+def service_worker_get_all_by(context, **kwargs):
+    return _service_worker_get_all_by(context, **kwargs)
+
+
 def _service_worker_get_all_by(context, **kwargs):
     return _get_all_by(context, models.ServiceWorker, **kwargs)
 
 
 def service_worker_delete(context, _id):
     return _delete(context, models.ServiceWorker, _id)
+
+
+# Config Schema
+
+def config_schema_create(context, values):
+    return _create(context, models.OsloConfigSchema(), values)
+
+
+def config_schema_update(context, _id, values):
+    return _update(context, models.OsloConfigSchema, _id, values)
+
+
+def config_schema_get(context, _id):
+    config = _get(context, models.OsloConfigSchema, _id)
+    if config is None:
+        raise exception.ConfigNotFound(config_schema_id=_id)
+
+    return config
+
+
+def config_schema_get_by_name(context, name):
+    config = _get_by_name(context, models.OsloConfigSchema, name)
+    if config is None:
+        raise exception.ConfigSchemaNotFound(config_schema_id=name)
+
+    return config
+
+
+def config_schema_get_by(context,
+                         namespace=None,
+                         group=None,
+                         name=None):
+    query = _model_query(context, models.OsloConfigSchema)
+    if name is not None:
+        query = query.filter_by(name=name)
+    if group is not None:
+        query = query.filter_by(group_name=group)
+    if namespace is not None:
+        query = query.filter_by(namespace=namespace)
+    return query.all()
+
+
+def config_schema_get_all(context):
+    return _get_all(context, models.OsloConfigSchema)
+
+
+def _config_schema_get_all_by(context, **kwargs):
+    return _get_all_by(context, models.OsloConfigSchema, **kwargs)
+
+
+def config_schema_delete(context, _id):
+    return _delete(context, models.OsloConfigSchema, _id)
 
 
 # Config

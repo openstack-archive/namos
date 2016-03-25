@@ -271,8 +271,9 @@ class ServiceWorker(BASE,
                              default=lambda: str(uuid.uuid4()))
 
     pid = sqlalchemy.Column(
-        sqlalchemy.String(32),
-        nullable=False
+        sqlalchemy.String(64),
+        nullable=False,
+        unique=True
     )
     host = sqlalchemy.Column(
         sqlalchemy.String(248),
@@ -284,19 +285,17 @@ class ServiceWorker(BASE,
         nullable=False)
 
 
-class OsloConfig(BASE,
-                 NamosBase,
-                 SoftDelete,
-                 Extra):
-    __tablename__ = 'oslo_config'
+class OsloConfigSchema(BASE,
+                       NamosBase,
+                       Extra):
+    __tablename__ = 'oslo_config_schema'
 
+    # TODO(mrkanag) Check whether conf is unique across all services or only
+    # sepcific to namespace, otherwise uniqueconstraint is name, group_name
     __table_args__ = (
-        UniqueConstraint("name", "service_worker_id"),
+        UniqueConstraint("group_name", "name", "namespace"),
     )
 
-    default_value = sqlalchemy.Column(
-        sqlalchemy.Text
-    )
     name = sqlalchemy.Column(sqlalchemy.String(255),
                              # unique=True,
                              nullable=False,
@@ -308,10 +307,20 @@ class OsloConfig(BASE,
         default=''
     )
     type = sqlalchemy.Column(
-        sqlalchemy.String(16),
+        sqlalchemy.String(128),
         nullable=False
     )
-    value = sqlalchemy.Column(
+    group_name = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
+    namespace = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
+    # TODO(mrkanag) default value is some time overriden by services, which
+    # osloconfig allows, so this column should have values per given service
+    default_value = sqlalchemy.Column(
         sqlalchemy.Text
     )
     required = sqlalchemy.Column(
@@ -322,8 +331,37 @@ class OsloConfig(BASE,
         sqlalchemy.Boolean,
         default=False
     )
+    mutable = sqlalchemy.Column(
+        sqlalchemy.Boolean,
+        default=False
+    )
+
+
+class OsloConfig(BASE,
+                 NamosBase,
+                 SoftDelete,
+                 Extra):
+    __tablename__ = 'oslo_config'
+
+    __table_args__ = (
+        UniqueConstraint("oslo_config_schema_id", "service_worker_id"),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
+    value = sqlalchemy.Column(
+        sqlalchemy.Text
+    )
     file = sqlalchemy.Column(
         sqlalchemy.String(512)
+    )
+    oslo_config_schema_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_schema.id'),
+        nullable=False
     )
     service_worker_id = sqlalchemy.Column(
         Uuid,

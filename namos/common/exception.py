@@ -130,3 +130,8 @@ class ConfigNotFound(NotFound):
 class ConfigFileNotFound(NotFound):
     msg_fmt = ("Config file %(config_file_id)s does not found")
     error_code = 0x0b001
+
+
+class ConfigSchemaNotFound(NotFound):
+    msg_fmt = ("Config schema %(config_schema_id)s does not found")
+    error_code = 0x0c001

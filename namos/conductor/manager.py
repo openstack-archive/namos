@@ -17,6 +17,7 @@ import functools
 from oslo_config import cfg
 from oslo_context import context
 from oslo_log import log
+from oslo_utils import timeutils
 
 from namos.common import config
 from namos.common import exception
@@ -74,6 +75,28 @@ class ConductorManager(object):
                                             registration_info['prog_name']))
 
         return service_worker_id
+
+    @request_context
+    def heart_beat(self, context, identification, dieing=False):
+        try:
+            sw = db_api.service_worker_get_all_by(context,
+                                                  pid=identification)
+            if len(sw) == 1:
+                if not dieing:
+                    db_api.service_worker_update(
+                        context,
+                        sw[0].id,
+                        dict(updated_at=timeutils.utcnow()))
+                    LOG.info("HEART-BEAT LIVE %s " % identification)
+                else:
+                    db_api.service_worker_delete(context,
+                                                 sw[0].id)
+                    LOG.info("HEART-BEAT STOPPED %s " % identification)
+            else:
+                LOG.error("HEART-BEAT FAILED, No service worker registered "
+                          "with identification %s " % identification)
+        except Exception as e:  # noqa
+            LOG.error("HEART-BEAT FAILED %s " % e)
 
     @request_context
     def service_perspective_get(self,
@@ -218,9 +241,11 @@ class ServiceProcessor(object):
                 # TODO(mrkanag) Fix the name, device driver proper !
                 dict(name='%s@%s' % (self.registration_info['pid'],
                                      service_component.name),
-                     pid=self.registration_info['pid'],
+                     pid=self.registration_info['identification'],
                      host=self.registration_info['host'],
-                     service_component_id=service_component.id))
+                     service_component_id=service_component.id,
+                     deleted_at=None
+                     ))
             LOG.info('Service Worker %s is created' % service_worker)
         except exception.AlreadyExist:
             # TODO(mrkanag) Find a way to purge the dead service worker
@@ -239,7 +264,8 @@ class ServiceProcessor(object):
                         context,
                         service_workers[0].id,
                         dict(
-                            pid=self.registration_info['pid'],
+                            deleted_at=None,
+                            pid=self.registration_info['identification'],
                             name='%s@%s' % (self.registration_info['pid'],
                                             service_component.name)
                         ))
@@ -253,20 +279,65 @@ class ServiceProcessor(object):
         # or per service_worker,
         for cfg_name, cfg_obj in self.registration_info[
             'config_dict'].iteritems():
-            cfg_obj['service_worker_id'] = service_worker.id
+
+            cfg_schs = db_api.config_schema_get_by(
+                context=context,
+                group=cfg_obj['group'],
+                name=cfg_obj['name']
+            )
+
+            if len(cfg_schs) > 1:
+                cfg_sche = cfg_schs[0]
+                LOG.info("Config Schema %s is existing and is updated" %
+                         cfg_sche)
+            else:
+                try:
+                    cfg_sche = db_api.config_schema_create(
+                        context,
+                        dict(
+                            namespace='UNKNOWN-NAMOS',
+                            default_value=cfg_obj['default_value'],
+                            type=cfg_obj['type'],
+                            help=cfg_obj['help'],
+                            required=cfg_obj['required'],
+                            secret=cfg_obj['secret'],
+                            mutable=False,
+                            group_name=cfg_obj['group'],
+                            name=cfg_obj['name']
+                        )
+                    )
+                    LOG.info("Config Schema %s is created" % cfg_sche)
+                except exception.AlreadyExist:
+                    cfg_schs = db_api.config_schema_get_by(
+                        context=context,
+                        group=cfg_obj['group'],
+                        name=cfg_obj['name'],
+                        namespace='UNKNOWN-NAMOS'
+                    )
+
+                    cfg_sche = cfg_schs[0]
+                    LOG.info("Config Schema %s is existing and is updated" %
+                             cfg_sche)
+
+            cfg_obj_ = dict(
+                service_worker_id=service_worker.id,
+                name="%s.%s" % (cfg_obj['group'], cfg_name),
+                value=cfg_obj['value'],
+                oslo_config_schema_id=cfg_sche.id
+            )
 
             try:
-                config = db_api.config_create(context, cfg_obj)
+                config = db_api.config_create(context, cfg_obj_)
                 LOG.info("Config %s is created" % config)
             except exception.AlreadyExist:
                 configs = db_api.config_get_by_name_for_service_worker(
                     context,
-                    service_worker_id=cfg_obj['service_worker_id'],
-                    name=cfg_obj['name'])
+                    service_worker_id=cfg_obj_['service_worker_id'],
+                    name=cfg_obj_['name'])
                 if len(configs) == 1:
                     config = db_api.config_update(context,
                                                   configs[0].id,
-                                                  cfg_obj)
+                                                  cfg_obj_)
                     LOG.info("Config %s is existing and is updated" % config)
 
         return service_worker.id

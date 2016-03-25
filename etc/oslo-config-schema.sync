@@ -1,0 +1,26 @@
+# List of config generator conf files for syncing the conf with namos
+heat=/opt/stack/heat/config-generator.conf
+namos=/home/manickan/workspace/namos/openstack/namos/config-generator.conf
+keystone=/opt/stack/keystone/config-generator/keystone.conf
+neutron-bgp-dragent=/opt/stack/neutron/etc/oslo-config-generator/bgp_dragent.ini
+neutron-dhcp-agent=/opt/stack/neutron/etc/oslo-config-generator/dhcp_agent.ini
+neutron-l3-agent=/opt/stack/neutron/etc/oslo-config-generator/l3_agent.ini
+neutron-linuxbridge-agent=/opt/stack/neutron/etc/oslo-config-generator/linuxbridge_agent.ini
+neutron-metadata-agent=/opt/stack/neutron/etc/oslo-config-generator/metadata_agent.ini
+neutron-metering-agent=/opt/stack/neutron/etc/oslo-config-generator/metering_agent.ini
+neutron-ml2=/opt/stack/neutron/etc/oslo-config-generator/ml2_conf.ini
+neutron-ml2-sriov=/opt/stack/neutron/etc/oslo-config-generator/ml2_conf_sriov.ini
+neutron=/opt/stack/neutron/etc/oslo-config-generator/neutron.conf
+neutron-openvswitch-agent=/opt/stack/neutron/etc/oslo-config-generator/openvswitch_agent.ini
+neutron-sriov-agent=/opt/stack/neutron/etc/oslo-config-generator/sriov_agent.ini
+lbaas-agent=/opt/stack/neutron-lbaas/etc/oslo-config-generator/lbaas_agent.ini
+neutron-lbaas=/opt/stack/neutron-lbaas/etc/oslo-config-generator/neutron_lbaas.conf
+services-lbaas=/opt/stack/neutron-lbaas/etc/oslo-config-generator/services_lbaas.conf
+glance-api=/opt/stack/glance/etc/oslo-config-generator/glance-api.conf
+glance-cache=/opt/stack/glance/etc/oslo-config-generator/glance-cache.conf
+glance-glare=/opt/stack/glance/etc/oslo-config-generator/glance-glare.conf
+glance-registry=/opt/stack/glance/etc/oslo-config-generator/glance-registry.conf
+glance-scrubber=/opt/stack/glance/etc/oslo-config-generator/glance-scrubber.conf
+glance-manage=/opt/stack/glance/etc/oslo-config-generator/glance-manage.conf
+nova=/opt/stack/nova/etc/nova/nova-config-generator.conf
+cinder=/opt/stack/cinder/cinder/config/cinder-config-generator.conf

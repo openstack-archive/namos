@@ -304,12 +304,47 @@ def service_worker_get_all(context):
     return IMPL.service_worker_get_all(context)
 
 
+def service_worker_get_all_by(context, **kwargs):
+    return IMPL.service_worker_get_all_by(context, **kwargs)
+
+
 def service_worker_delete(context, _id):
     return IMPL.service_worker_delete(context, _id)
 
 
-#  Config
+#  config schema
+def config_schema_create(context, values):
+    return IMPL.config_schema_create(context, values)
 
+
+def config_schema_update(context, _id, values):
+    return IMPL.config_schema_update(context, _id, values)
+
+
+def config_schema_get(context, _id):
+    return IMPL.config_schema_get(context, _id)
+
+
+def config_schema_get_by_name(context, name):
+    return IMPL.config_schema_get_by_name(context, name)
+
+
+def config_schema_get_by(context,
+                         namespace=None,
+                         group=None,
+                         name=None):
+    return IMPL.config_schema_get_by(context, namespace, group, name)
+
+
+def config_schema_get_all(context):
+    return IMPL.config_schema_get_all(context)
+
+
+def config_schema_delete(context, _id):
+    return IMPL.config_schema_delete(context, _id)
+
+
+#  Config
 def config_create(context, values):
     return IMPL.config_create(context, values)
 
@@ -343,6 +378,8 @@ def config_get_all(context):
 def config_delete(context, _id):
     return IMPL.config_delete(context, _id)
 
+
+# config file
 
 def config_file_create(context, values):
     return IMPL.config_file_create(context, values)

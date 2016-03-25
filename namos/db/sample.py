@@ -391,9 +391,9 @@ def _service_populate_demo_data():
         service_worker = inject_id(service_worker)
         api.service_worker_create(None, service_worker)
 
-    for config in CONFIG_LIST:
-        config = inject_id(config)
-        api.config_create(None, config)
+    # for config in CONFIG_LIST:
+    #     config = inject_id(config)
+    #     api.config_create(None, config)
 
 
 def populate_demo_data():
@@ -418,8 +418,8 @@ def _device_purge_demo_data():
 
 
 def _service_purge_demo_data():
-    for config in CONFIG_LIST:
-        api.config_delete(None, config.keys()[0])
+    # for config in CONFIG_LIST:
+    #     api.config_delete(None, config.keys()[0])
     for service_worker in SERVICE_WORKER_LIST:
         api.service_worker_delete(None, service_worker.keys()[0])
 

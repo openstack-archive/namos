@@ -49,3 +49,7 @@ def init_log(project=PROJECT_NAME):
     logging.setup(cfg.CONF,
                   project,
                   version=VERSION)
+
+
+def list_opts():
+    yield 'conductor', conductor_opts
