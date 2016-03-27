@@ -357,8 +357,9 @@ class OsloConfig(BASE,
     value = sqlalchemy.Column(
         sqlalchemy.Text
     )
-    file = sqlalchemy.Column(
-        sqlalchemy.String(512)
+    oslo_config_file_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_file.id')
     )
     oslo_config_schema_id = sqlalchemy.Column(
         Uuid,

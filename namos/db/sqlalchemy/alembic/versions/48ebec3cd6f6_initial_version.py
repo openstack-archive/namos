@@ -177,8 +177,8 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('oslo_config_file')
     op.drop_table('oslo_config')
+    op.drop_table('oslo_config_file')
     op.drop_table('oslo_config_schema')
     op.drop_table('device_driver')
     op.drop_table('service_worker')

@@ -167,6 +167,29 @@ class ServiceProcessor(object):
     def __init__(self, registration_info):
         self.registration_info = registration_info
 
+    def file_to_configs(self, file_content):
+        tmp_file_path = '/tmp/sample-namos-config.conf'
+        with open(tmp_file_path, 'w') as file:
+            file.write(file_content)
+
+        with open(tmp_file_path, 'r') as file:
+            section = ''
+            conf_dict = dict()
+
+            for line in file:
+                if line.strip().startswith('['):
+                    section = line.replace('[', '').replace(']', '').strip()
+                    continue
+                if section:
+                    kv = line.strip().split('=')
+                    conf_dict[
+                        '%s::%s' % (section, kv[0].strip())] = None
+
+        import os
+        os.remove(tmp_file_path)
+
+        return conf_dict
+
     def process_service(self, context):
         # Service Node
         try:
@@ -225,34 +248,6 @@ class ServiceProcessor(object):
                          service_component)
             # TODO(mrkanag) what to do when service_components size is > 1
 
-        # config file
-        for cfg_f in self.registration_info['config_file_list']:
-            try:
-                config_file = db_api.config_file_create(
-                    context,
-                    dict(name=cfg_f,
-                         file=self.registration_info[
-                             'config_file_dict'][cfg_f],
-                         service_component_id=service_component.id,
-                         service_node_id=node.id))
-                LOG.info('Oslo config file %s is created' % config_file)
-            except exception.AlreadyExist:
-                config_files = \
-                    db_api.config_file_get_by_name_for_service_node(
-                        context,
-                        service_node_id=node.id,
-                        name=cfg_f
-                    )
-                if len(config_files) == 1:
-                    config_file = \
-                        db_api.config_file_update(
-                            context,
-                            config_files[0].id,
-                            dict(file=self.registration_info[
-                                'config_file_dict'][cfg_f]))
-                    LOG.info('Oslo config file %s is existing and is updated'
-                             % config_file)
-
         # Service Worker
         try:
             service_worker = db_api.service_worker_create(
@@ -292,6 +287,41 @@ class ServiceProcessor(object):
                          % service_worker)
 
             # TODO(mrkanag) what to do when service_workers size is > 1
+
+        # config file
+        conf_files = dict()
+        for cfg_f in self.registration_info['config_file_list']:
+            try:
+                config_file = db_api.config_file_create(
+                    context,
+                    dict(name=cfg_f,
+                         file=self.registration_info[
+                             'config_file_dict'][cfg_f],
+                         service_component_id=service_component.id,
+                         service_node_id=node.id))
+                LOG.info('Oslo config file %s is created' % config_file)
+            except exception.AlreadyExist:
+                config_files = \
+                    db_api.config_file_get_by_name_for_service_node(
+                        context,
+                        service_node_id=node.id,
+                        name=cfg_f
+                    )
+                if len(config_files) == 1:
+                    config_file = \
+                        db_api.config_file_update(
+                            context,
+                            config_files[0].id,
+                            dict(file=self.registration_info[
+                                'config_file_dict'][cfg_f]))
+                    LOG.info('Oslo config file %s is existing and is updated'
+                             % config_file)
+
+            config_dict = self.file_to_configs(
+                self.registration_info['config_file_dict'][cfg_f]
+            )
+
+            conf_files[config_file.id] = config_dict
 
         # Config
         # TODO(mrkanag) Optimize the config like per service_component
@@ -338,11 +368,20 @@ class ServiceProcessor(object):
                     LOG.debug("Config Schema %s is existing and is updated" %
                               cfg_sche)
 
+            # is it part of config file
+            cfg_name = "%s::%s" % (cfg_obj['group'], cfg_name)
+            file_id = None
+            for f_id, conf_keys in conf_files.items():
+                if cfg_name in conf_keys.keys():
+                    file_id = f_id
+                    break
+
             cfg_obj_ = dict(
                 service_worker_id=service_worker.id,
-                name="%s.%s" % (cfg_obj['group'], cfg_name),
+                name=cfg_name,
                 value=cfg_obj['value'],
-                oslo_config_schema_id=cfg_sche.id
+                oslo_config_schema_id=cfg_sche.id,
+                oslo_config_file_id=file_id
             )
 
             try:
