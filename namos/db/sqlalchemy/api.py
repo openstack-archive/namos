@@ -629,12 +629,12 @@ def config_file_get_by_name(context, name):
     return config
 
 
-def config_file_get_by_name_for_service_component(
+def config_file_get_by_name_for_service_node(
         context,
-        service_component_id,
+        service_node_id,
         name=None):
     query = _model_query(context, models.OsloConfigFile). \
-        filter_by(service_component_id=service_component_id)
+        filter_by(service_node_id=service_node_id)
     if name is not None:
         query = query.filter_by(name=name)
 
@@ -934,9 +934,9 @@ def view_360(context):
                     'service_component'][srv_cmp.id] = dict()
                 view['region'][rg.id]['service_node'][srv_nd.id][
                     'service_component'][srv_cmp.id]['config_file'] = dict()
-                cfg_fl_lst = config_file_get_by_name_for_service_component(
+                cfg_fl_lst = config_file_get_by_name_for_service_node(
                     context,
-                    service_component_id=srv_cmp.id
+                    service_node_id=srv_nd.id
                 )
                 for cfg_fl in cfg_fl_lst:
                     # config file

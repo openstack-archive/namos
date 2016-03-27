@@ -80,7 +80,7 @@ def get_transport(url=None, optional=False, cache=True):
 
 def get_rpc_server(host, exchange, topic, version, endpoint):
     """Return a configured olso.messaging rpc server."""
-    oslo_messaging.set_transport_defaults(exchange)
+    # oslo_messaging.set_transport_defaults(exchange)
     target = oslo_messaging.Target(server=host,
                                    topic=topic,
                                    version=version)

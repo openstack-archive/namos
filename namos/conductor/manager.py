@@ -21,6 +21,7 @@ from oslo_utils import timeutils
 
 from namos.common import config
 from namos.common import exception
+from namos.common import messaging
 from namos.db import api as db_api
 from namos.db import openstack_drivers
 
@@ -60,8 +61,11 @@ class ConductorManager(object):
 
     @request_context
     def register_myself(self, context, registration_info):
-        LOG.info("REGISTER [%s.%s] START" % (registration_info['project_name'],
-                                             registration_info['prog_name']))
+        LOG.info("REGISTER [%s.%s.%s] START" % (
+            registration_info['project_name'],
+            registration_info['prog_name'],
+            registration_info['identification']
+        ))
 
         # Service processing
         sp = ServiceProcessor(registration_info)
@@ -71,10 +75,24 @@ class ConductorManager(object):
         dp = DriverProcessor(service_worker_id,
                              registration_info['config_dict'])
         dp.process_drivers(context)
-        LOG.info("REGISTER [%s.%s] DONE" % (registration_info['project_name'],
-                                            registration_info['prog_name']))
-
+        LOG.info("REGISTER [%s.%s.%s] DONE" % (
+            registration_info['project_name'],
+            registration_info['prog_name'],
+            registration_info['identification']
+        ))
+        self._regisgration_ackw(context,
+                                registration_info['identification'])
         return service_worker_id
+
+    def _regisgration_ackw(self, context, identification):
+        client = messaging.get_rpc_client(topic='namos.CONF.%s' %
+                                                identification,
+                                          version=self.RPC_API_VERSION,
+                                          exchange=config.PROJECT_NAME)
+        client.cast(context,
+                    'regisgration_ackw',
+                    identification=identification)
+        LOG.info("REGISTER [%s] ACK" % identification)
 
     @request_context
     def heart_beat(self, context, identification, dieing=False):
@@ -215,13 +233,14 @@ class ServiceProcessor(object):
                     dict(name=cfg_f,
                          file=self.registration_info[
                              'config_file_dict'][cfg_f],
-                         service_component_id=service_component.id))
+                         service_component_id=service_component.id,
+                         service_node_id=node.id))
                 LOG.info('Oslo config file %s is created' % config_file)
             except exception.AlreadyExist:
                 config_files = \
-                    db_api.config_file_get_by_name_for_service_component(
+                    db_api.config_file_get_by_name_for_service_node(
                         context,
-                        service_component_id=service_component.id,
+                        service_node_id=node.id,
                         name=cfg_f
                     )
                 if len(config_files) == 1:
@@ -288,8 +307,8 @@ class ServiceProcessor(object):
 
             if len(cfg_schs) > 1:
                 cfg_sche = cfg_schs[0]
-                LOG.info("Config Schema %s is existing and is updated" %
-                         cfg_sche)
+                LOG.debug("Config Schema %s is existing and is updated" %
+                          cfg_sche)
             else:
                 try:
                     cfg_sche = db_api.config_schema_create(
@@ -306,7 +325,7 @@ class ServiceProcessor(object):
                             name=cfg_obj['name']
                         )
                     )
-                    LOG.info("Config Schema %s is created" % cfg_sche)
+                    LOG.debug("Config Schema %s is created" % cfg_sche)
                 except exception.AlreadyExist:
                     cfg_schs = db_api.config_schema_get_by(
                         context=context,
@@ -316,8 +335,8 @@ class ServiceProcessor(object):
                     )
 
                     cfg_sche = cfg_schs[0]
-                    LOG.info("Config Schema %s is existing and is updated" %
-                             cfg_sche)
+                    LOG.debug("Config Schema %s is existing and is updated" %
+                              cfg_sche)
 
             cfg_obj_ = dict(
                 service_worker_id=service_worker.id,
@@ -328,7 +347,7 @@ class ServiceProcessor(object):
 
             try:
                 config = db_api.config_create(context, cfg_obj_)
-                LOG.info("Config %s is created" % config)
+                LOG.debug("Config %s is created" % config)
             except exception.AlreadyExist:
                 configs = db_api.config_get_by_name_for_service_worker(
                     context,
@@ -338,7 +357,7 @@ class ServiceProcessor(object):
                     config = db_api.config_update(context,
                                                   configs[0].id,
                                                   cfg_obj_)
-                    LOG.info("Config %s is existing and is updated" % config)
+                    LOG.debug("Config %s is existing and is updated" % config)
 
         return service_worker.id
 

@@ -45,7 +45,9 @@ class HeartBeat(object):
     def report_status(self):
         # TODO(mrkanag) Make like Node: Service: worker: status
         for sw in api.service_worker_get_all(None):
-            print ('[', 'T' if self.find_status(sw) else 'F', ']', sw.name)
+            msg = '[%s] %s' % ('T' if self.find_status(sw) else 'F',
+                               sw.name)
+            print (msg)
 
 
 class OsloConfigSchemaManager(object):
@@ -108,8 +110,11 @@ class OsloConfigSchemaManager(object):
                             except exception.AlreadyExist:
                                 _a = 'F'
 
-                            print ('[', _a, ']', namespace, ':', grp, ':',
-                                   name)
+                            msg = '[%s] %s::%s::%s' % (_a,
+                                                       namespace,
+                                                       grp,
+                                                       name)
+                            print (msg)
 
 
 class DBCommand(object):

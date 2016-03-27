@@ -397,13 +397,13 @@ def config_file_get_by_name(context, name):
     return IMPL.config_file_get_by_name(context, name)
 
 
-def config_file_get_by_name_for_service_component(
+def config_file_get_by_name_for_service_node(
         context,
-        service_component_id,
+        service_node_id,
         name=None):
-    return IMPL.config_file_get_by_name_for_service_component(
+    return IMPL.config_file_get_by_name_for_service_node(
         context,
-        service_component_id,
+        service_node_id,
         name)
 
 

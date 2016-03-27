@@ -53,3 +53,13 @@ class Uuid(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return value
+
+
+class LongText(TypeDecorator):
+    impl = Text
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'mysql':
+            return dialect.type_descriptor(mysql.LONGTEXT())
+        else:
+            return self.impl

@@ -22,7 +22,9 @@ from sqlalchemy import UniqueConstraint
 import uuid
 
 from namos.db.sqlalchemy.types import Json
+from namos.db.sqlalchemy.types import LongText
 from namos.db.sqlalchemy.types import Uuid
+
 from oslo_db.sqlalchemy import models
 from oslo_utils import timeutils
 
@@ -376,7 +378,7 @@ class OsloConfigFile(BASE,
                      Extra):
     __tablename__ = 'oslo_config_file'
     __table_args__ = (
-        UniqueConstraint("name", "service_component_id"),
+        UniqueConstraint("name", "service_node_id"),
     )
 
     name = sqlalchemy.Column(sqlalchemy.String(255),
@@ -385,10 +387,16 @@ class OsloConfigFile(BASE,
                              default=lambda: str(uuid.uuid4()))
 
     file = sqlalchemy.Column(
-        sqlalchemy.Text
+        LongText
     )
+    # Always having last one updated the conf file
     service_component_id = sqlalchemy.Column(
         Uuid,
         sqlalchemy.ForeignKey('service_component.id'),
+        nullable=False
+    )
+    service_node_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('service_node.id'),
         nullable=False
     )
