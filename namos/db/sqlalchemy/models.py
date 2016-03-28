@@ -102,9 +102,10 @@ class Region(BASE,
     __tablename__ = 'region'
 
     # Its of type String to match with keystone region id
+    # TODO(mrkanag) make this as non nullable
     keystone_region_id = sqlalchemy.Column(
         sqlalchemy.String(255),
-        nullable=False)
+        nullable=True)
 
 
 class Device(BASE,
@@ -211,9 +212,10 @@ class Service(BASE,
               Extra):
     __tablename__ = 'service'
 
+    # TODO(mrkanag) make this as non nullable
     keystone_service_id = sqlalchemy.Column(
         Uuid,
-        nullable=False)
+        nullable=True)
 
 
 class ServiceNode(BASE,
@@ -264,7 +266,7 @@ class ServiceWorker(BASE,
     __tablename__ = 'service_worker'
 
     __table_args__ = (
-        UniqueConstraint("host", "service_component_id"),
+        UniqueConstraint("pid", "service_component_id"),
     )
 
     name = sqlalchemy.Column(sqlalchemy.String(255),
@@ -280,6 +282,11 @@ class ServiceWorker(BASE,
     host = sqlalchemy.Column(
         sqlalchemy.String(248),
         nullable=False
+    )
+    is_launcher = sqlalchemy.Column(
+        sqlalchemy.Boolean,
+        nullable=False,
+        default=False
     )
     service_component_id = sqlalchemy.Column(
         Uuid,

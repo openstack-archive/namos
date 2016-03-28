@@ -48,6 +48,7 @@ def get_backend():
 def _model_query(context, *args):
     session = _session(context)
     query = session.query(*args)
+
     return query
 
 
@@ -98,9 +99,14 @@ def _get_all_by(context, cls, **kwargs):
     return results
 
 
-def _delete(context, cls, _id):
+def _delete(context, cls, _id, soft=True):
     result = _get(context, cls, _id)
     if result is not None:
+        if soft and hasattr(result, 'soft_delete'):
+            result.soft_delete(_session(context))
+            return
+        # TODO(mrkanag) is it ok to hard delete when soft =True and soft_delete
+        # is missing
         result.delete(_session(context))
 
 
@@ -588,7 +594,7 @@ def config_get_by_name_for_service_worker(context,
         query = query.filter_by(name=name)
     elif only_configured:
         query = query.filter(
-            models.OsloConfig.value != models.OsloConfig.default_value)
+            models.OsloConfig.oslo_config_file_id is not None)
     return query.all()
 
 

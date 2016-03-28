@@ -35,7 +35,7 @@ conductor_opts = [
 
 
 def register_conductor_opts():
-    CONF.register_opts(conductor_opts, 'conductor')
+    CONF.register_opts(conductor_opts, 'os_manager')
 
 
 def init_conf(prog):
@@ -52,4 +52,4 @@ def init_log(project=PROJECT_NAME):
 
 
 def list_opts():
-    yield 'conductor', conductor_opts
+    yield 'os_manager', conductor_opts

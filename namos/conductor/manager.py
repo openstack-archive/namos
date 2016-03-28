@@ -22,6 +22,7 @@ from oslo_utils import timeutils
 from namos.common import config
 from namos.common import exception
 from namos.common import messaging
+from namos.common import utils
 from namos.db import api as db_api
 from namos.db import openstack_drivers
 
@@ -68,8 +69,10 @@ class ConductorManager(object):
         ))
 
         # Service processing
-        sp = ServiceProcessor(registration_info)
-        service_worker_id = sp.process_service(context)
+        sp = ServiceProcessor(context,
+                              self,
+                              registration_info)
+        service_component_id, service_worker_id = sp.process_service(context)
 
         #  Device Driver processing
         dp = DriverProcessor(service_worker_id,
@@ -82,6 +85,8 @@ class ConductorManager(object):
         ))
         self._regisgration_ackw(context,
                                 registration_info['identification'])
+
+        sp.cleanup(service_component_id)
         return service_worker_id
 
     def _regisgration_ackw(self, context, identification):
@@ -93,6 +98,22 @@ class ConductorManager(object):
                     'regisgration_ackw',
                     identification=identification)
         LOG.info("REGISTER [%s] ACK" % identification)
+
+    def _ping(self, context, identification):
+        client = messaging.get_rpc_client(
+            topic='namos.CONF.%s' % identification,
+            version=self.RPC_API_VERSION,
+            exchange=config.PROJECT_NAME)
+        try:
+            client.call(context,
+                        'ping_me',
+                        identification=identification)
+
+            LOG.debug("PING [%s] SUCCESSFUL" % identification)
+            return True
+        except:  # noqa
+            LOG.debug("PING [%s] FAILED" % identification)
+            return False
 
     @request_context
     def heart_beat(self, context, identification, dieing=False):
@@ -164,8 +185,13 @@ class ConductorManager(object):
 
 
 class ServiceProcessor(object):
-    def __init__(self, registration_info):
+    def __init__(self,
+                 context,
+                 manager,
+                 registration_info):
         self.registration_info = registration_info
+        self.manager = manager
+        self.context = context
 
     def file_to_configs(self, file_content):
         tmp_file_path = '/tmp/sample-namos-config.conf'
@@ -191,15 +217,33 @@ class ServiceProcessor(object):
         return conf_dict
 
     def process_service(self, context):
+        # region
+        # If region is not provided, make it as belongs to namos's region
+        if not self.registration_info.get('region_name'):
+            self.registration_info[
+                'region_name'] = cfg.CONF.os_namos.region_name
+
+        try:
+            region = db_api.region_create(
+                context,
+                dict(name=self.registration_info.get('region_name'))
+            )
+            LOG.info('Region %s is created' % region)
+        except exception.AlreadyExist:
+            region = db_api.region_get_by_name(
+                context,
+                name=self.registration_info.get('region_name')
+            )
+            LOG.info('Region %s is existing' % region)
+
         # Service Node
         try:
-            # TODO(mrkanag) region_id is hard-coded, fix it !
-            # user proper node name instead of fqdn
+            # TODO(mrkanag) user proper node name instead of fqdn
             node = db_api.service_node_create(
                 context,
                 dict(name=self.registration_info.get('fqdn'),
                      fqdn=self.registration_info.get('fqdn'),
-                     region_id='f7dcd175-27ef-46b5-997f-e6e572f320b0'))
+                     region_id=region.id))
 
             LOG.info('Service node %s is created' % node)
         except exception.AlreadyExist:
@@ -258,35 +302,17 @@ class ServiceProcessor(object):
                      pid=self.registration_info['identification'],
                      host=self.registration_info['host'],
                      service_component_id=service_component.id,
-                     deleted_at=None
+                     deleted_at=None,
+                     is_launcher=self.registration_info['i_am_launcher']
                      ))
             LOG.info('Service Worker %s is created' % service_worker)
         except exception.AlreadyExist:
-            # TODO(mrkanag) Find a way to purge the dead service worker
-            # Once each service  is enabled with heart beating namos
-            # purging can be done once heart beat stopped. this can be
-            # done from openstack.common.service.py
-            service_workers = \
-                db_api.service_worker_get_by_host_for_service_component(
-                    context,
-                    service_component_id=service_component.id,
-                    host=self.registration_info['host']
-                )
-            if len(service_workers) == 1:
-                service_worker = \
-                    db_api.service_worker_update(
-                        context,
-                        service_workers[0].id,
-                        dict(
-                            deleted_at=None,
-                            pid=self.registration_info['identification'],
-                            name='%s@%s' % (self.registration_info['pid'],
-                                            service_component.name)
-                        ))
-                LOG.info('Service Worker %s is existing and is updated'
-                         % service_worker)
-
-            # TODO(mrkanag) what to do when service_workers size is > 1
+            LOG.info('Service Worker %s is existing' %
+                     db_api.service_worker_get_all_by(
+                         context,
+                         pid=self.registration_info['identification'],
+                         service_component_id=service_component.id
+                     )[0])
 
         # config file
         conf_files = dict()
@@ -398,7 +424,40 @@ class ServiceProcessor(object):
                                                   cfg_obj_)
                     LOG.debug("Config %s is existing and is updated" % config)
 
-        return service_worker.id
+        return service_component.id, service_worker.id
+
+    def cleanup(self, service_component_id):
+        # clean up the dead service workers
+        #  TODO(mrkanag) Make this into thread
+        service_workers = \
+            db_api.service_worker_get_all_by(
+                context,
+                service_component_id=service_component_id
+            )
+
+        for srv_wkr in service_workers:
+            # TODO(mrkanag) Move this to db layer and query non deleted entries
+            if srv_wkr.deleted_at is not None:
+                continue
+
+            if utils.find_status(srv_wkr):
+                LOG.info('Service Worker %s is live'
+                         % srv_wkr.id)
+                continue
+            else:
+                confs = db_api.config_get_by_name_for_service_worker(
+                    self.context,
+                    service_worker_id=srv_wkr.id
+                )
+
+                for conf in confs:
+                    db_api.config_delete(self.context, conf.id)
+                    LOG.debug('Config %s is deleted'
+                              % conf.id)
+
+                db_api.service_worker_delete(self.context, srv_wkr.id)
+                LOG.info('Service Worker %s is deleted'
+                         % srv_wkr.id)
 
 
 class DriverProcessor(object):

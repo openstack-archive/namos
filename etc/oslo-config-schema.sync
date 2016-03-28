@@ -1,6 +1,7 @@
 # List of config generator conf files for syncing the conf with namos
 heat=/opt/stack/heat/config-generator.conf
 namos=/home/manickan/workspace/namos/openstack/namos/config-generator.conf
+os_namos=/home/manickan/workspace/namos/openstack/os-namos/config-generator.conf
 keystone=/opt/stack/keystone/config-generator/keystone.conf
 neutron-bgp-dragent=/opt/stack/neutron/etc/oslo-config-generator/bgp_dragent.ini
 neutron-dhcp-agent=/opt/stack/neutron/etc/oslo-config-generator/dhcp_agent.ini

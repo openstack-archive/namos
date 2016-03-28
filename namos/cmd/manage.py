@@ -15,10 +15,10 @@
 import sys
 
 from oslo_config import cfg
-from oslo_utils import timeutils
 
 from namos.common import config
 from namos.common import exception
+from namos.common import utils
 from namos.db import api
 from namos.db import sample
 from namos.db.sqlalchemy import migration
@@ -29,24 +29,18 @@ MANAGE_COMMAND_NAME = 'namos-manage'
 
 
 class HeartBeat(object):
-    def find_status(self, sw, report_interval=60):
-        status = False
-        if sw.updated_at is not None:
-            if ((timeutils.utcnow() - sw.updated_at).total_seconds()
-                    <= report_interval):
-                status = True
-        else:
-            if ((timeutils.utcnow() - sw.created_at).total_seconds()
-                    <= report_interval):
-                status = True
-
-        return status
-
     def report_status(self):
         # TODO(mrkanag) Make like Node: Service: worker: status
         for sw in api.service_worker_get_all(None):
-            msg = '[%s] %s' % ('T' if self.find_status(sw) else 'F',
-                               sw.name)
+            # TODO(mrkanag) Move this to db layer and query non deleted entries
+            if sw.deleted_at is not None:
+                continue
+
+            msg = '[%s] [%s] %s %s' % (
+                'T' if sw.is_launcher else 'F',
+                'T' if utils.find_status(sw) else 'F',
+                sw.name,
+                sw.host)
             print (msg)
 
 
