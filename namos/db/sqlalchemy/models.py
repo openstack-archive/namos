@@ -257,6 +257,8 @@ class ServiceComponent(BASE,
         Uuid,
         sqlalchemy.ForeignKey('service.id'),
         nullable=False)
+    type = sqlalchemy.Column(sqlalchemy.String(255),
+                             nullable=False)
 
 
 class ServiceWorker(BASE,
@@ -302,7 +304,11 @@ class OsloConfigSchema(BASE,
     # TODO(mrkanag) Check whether conf is unique across all services or only
     # sepcific to namespace, otherwise uniqueconstraint is name, group_name
     __table_args__ = (
-        UniqueConstraint("group_name", "name", "namespace"),
+        UniqueConstraint("group_name",
+                         "name",
+                         "namespace",
+                         "project",
+                         "file_name"),
     )
 
     name = sqlalchemy.Column(sqlalchemy.String(255),
@@ -327,6 +333,15 @@ class OsloConfigSchema(BASE,
         sqlalchemy.String(128),
         nullable=False
     )
+    # This column helps to keep schema for each service
+    project = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
+    file_name = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
     # TODO(mrkanag) default value is some time overriden by services, which
     # osloconfig allows, so this column should have values per given service
     default_value = sqlalchemy.Column(
@@ -346,14 +361,31 @@ class OsloConfigSchema(BASE,
     )
 
 
-class OsloConfig(BASE,
-                 NamosBase,
-                 SoftDelete,
-                 Extra):
+class OsloConfigBase(object):
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
+    value = sqlalchemy.Column(
+        sqlalchemy.Text
+    )
+    oslo_config_schema_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_schema.id')
+    )
+
+
+class OsloConfig(
+    BASE,
+    NamosBase,
+    SoftDelete,
+    Extra):
     __tablename__ = 'oslo_config'
 
     __table_args__ = (
-        UniqueConstraint("oslo_config_schema_id", "service_worker_id"),
+        UniqueConstraint("name", "service_worker_id"),
     )
 
     name = sqlalchemy.Column(sqlalchemy.String(255),
@@ -364,19 +396,54 @@ class OsloConfig(BASE,
     value = sqlalchemy.Column(
         sqlalchemy.Text
     )
+    oslo_config_schema_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_schema.id')
+    )
+
+    service_worker_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('service_worker.id')
+    )
+    oslo_config_file_entry_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_file_entry.id')
+    )
+
+
+class OsloConfigFileEntry(
+    BASE,
+    NamosBase,
+    SoftDelete,
+    Extra):
+    __tablename__ = 'oslo_config_file_entry'
+
+    __table_args__ = (
+        UniqueConstraint("oslo_config_file_id",
+                         "name",
+                         "service_component_id", ),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
+    value = sqlalchemy.Column(
+        sqlalchemy.Text
+    )
+    oslo_config_schema_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('oslo_config_schema.id')
+    )
     oslo_config_file_id = sqlalchemy.Column(
         Uuid,
         sqlalchemy.ForeignKey('oslo_config_file.id')
     )
-    oslo_config_schema_id = sqlalchemy.Column(
+
+    service_component_id = sqlalchemy.Column(
         Uuid,
-        sqlalchemy.ForeignKey('oslo_config_schema.id'),
-        nullable=False
-    )
-    service_worker_id = sqlalchemy.Column(
-        Uuid,
-        sqlalchemy.ForeignKey('service_worker.id'),
-        nullable=False
+        sqlalchemy.ForeignKey('service_component.id')
     )
 
 
@@ -397,14 +464,67 @@ class OsloConfigFile(BASE,
     file = sqlalchemy.Column(
         LongText
     )
-    # Always having last one updated the conf file
-    service_component_id = sqlalchemy.Column(
-        Uuid,
-        sqlalchemy.ForeignKey('service_component.id'),
-        nullable=False
-    )
     service_node_id = sqlalchemy.Column(
         Uuid,
         sqlalchemy.ForeignKey('service_node.id'),
         nullable=False
     )
+
+
+class CapabilitySchema(BASE,
+                       NamosBase,
+                       Description,
+                       SoftDelete,
+                       Extra):
+    __tablename__ = 'os_capability_schema'
+
+    # TODO(mrkanag) Check whether conf is unique across all services or only
+    # sepcific to namespace, otherwise uniqueconstraint is name, group_name
+    __table_args__ = (
+        UniqueConstraint("name",
+                         "category"),
+    )
+
+    name = sqlalchemy.Column(sqlalchemy.String(255),
+                             # unique=True,
+                             nullable=False,
+                             default=lambda: str(uuid.uuid4()))
+
+    type = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
+    category = sqlalchemy.Column(
+        sqlalchemy.String(128),
+        nullable=False
+    )
+
+
+class Capability(BASE,
+                 NamosBase,
+                 SoftDelete,
+                 Extra):
+    __tablename__ = 'os_capability'
+
+    capability_schema_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('os_capability_schema.id'),
+        nullable=False
+    )
+    value = sqlalchemy.Column(
+        sqlalchemy.Text
+    )
+
+    device_id = sqlalchemy.Column(
+        Uuid,
+        sqlalchemy.ForeignKey('device.id'),
+        nullable=False
+    )
+
+
+class Quota(object):
+    pass
+
+
+class Reservation(object):
+    pass

@@ -178,14 +178,21 @@ def upgrade():
 
 def downgrade():
     op.drop_table('oslo_config')
+    op.drop_table('oslo_config_file_entry')
     op.drop_table('oslo_config_file')
     op.drop_table('oslo_config_schema')
+
+    op.drop_table('os_capability')
+    op.drop_table('os_capability_schema')
+
     op.drop_table('device_driver')
+    op.drop_table('device_endpoint')
+    op.drop_table('device_driver_class')
+    op.drop_table('device')
+
     op.drop_table('service_worker')
     op.drop_table('service_component')
-    op.drop_table('device_endpoint')
     op.drop_table('service_node')
-    op.drop_table('device')
-    op.drop_table('region')
-    op.drop_table('device_driver_class')
     op.drop_table('service')
+
+    op.drop_table('region')

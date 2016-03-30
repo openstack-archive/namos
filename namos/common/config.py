@@ -21,7 +21,34 @@ PROJECT_NAME = 'namos'
 VERSION = namos.__version__
 MESSAGE_QUEUE_CONDUCTOR_TOPIC = '%s.conductor' % PROJECT_NAME
 CONF = cfg.CONF
+SCvsNT = dict(
+    controller=['nova-api', 'nova-cert', 'nova-conductor', 'nova-consoleauth',
+                'nova-scheduler',
+                'cinder-api', 'cinder-scheduler',
+                'neutron-server',
+                'glance-api', 'glance-registry',
+                'keystone-all',
+                'heat-api', 'heat-api-cfn', 'heat-api-cloudwatch',
+                'heat-engine',
+                'namos-manager',
+                'ceilometer-api', 'ceilometer-polling', 'ceilometer-collector',
+                'ceilometer-agent-notification',
+                'tacker-server'
+                ],
+    compute=['nova-compute', 'neutron-openvswitch-agent',
+             'ceilometer-agent-compute'],
+    storage=['cinder-volume'],
+    network=['neutron-dhcp-agent', 'neutron-l3-agent', 'neutron-lbaas-agent',
+             'neutron-metadata-agent']
+)
 
+
+def find_type(name):
+    for key, value in SCvsNT.items():
+        if name in value:
+            return key
+
+    return 'UNKNOWN'
 
 conductor_opts = [
     cfg.IntOpt('workers',

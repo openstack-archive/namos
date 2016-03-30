@@ -19,6 +19,7 @@ from oslo_config import cfg
 from namos.common import config
 from namos.common import exception
 from namos.common import utils
+
 from namos.db import api
 from namos.db import sample
 from namos.db.sqlalchemy import migration
@@ -30,30 +31,37 @@ MANAGE_COMMAND_NAME = 'namos-manage'
 
 class HeartBeat(object):
     def report_status(self):
-        # TODO(mrkanag) Make like Node: Service: worker: status
-        for sw in api.service_worker_get_all(None):
-            # TODO(mrkanag) Move this to db layer and query non deleted entries
-            if sw.deleted_at is not None:
-                continue
-
-            msg = '[%s] [%s] %s %s' % (
-                'T' if sw.is_launcher else 'F',
-                'T' if utils.find_status(sw) else 'F',
-                sw.name,
-                sw.host)
-            print (msg)
+        print_format = "%-20s%-15s%-15s%-35s%-10s"
+        strip = 90 * '-'
+        print(strip)
+        print(print_format % ('Node',
+                              'Type',
+                              'Service',
+                              'Component',
+                              'Status'))
+        print(strip)
+        for k, s in api.get_status(None).items():
+            print(print_format % (s['node'],
+                                  s['type'],
+                                  s['service'],
+                                  s['component'],
+                                  s['status']))
+        print(strip)
 
 
 class OsloConfigSchemaManager(object):
     def gen_schema(self):
         import json
         cfg_ns = dict()
-        for cfg_ in api.config_schema_get_all(None):
-            if cfg_.namespace not in cfg_ns:
-                cfg_ns[cfg_.namespace] = dict()
-            if cfg_.group_name not in cfg_ns[cfg_.namespace]:
-                cfg_ns[cfg_.namespace][cfg_.group_name] = dict()
-            cfg_ns[cfg_.namespace][cfg_.group_name][cfg_.name] = cfg_.to_dict()
+
+        if CONF.command.by_namespace:
+            for cfg_ in api.config_schema_get_all(None):
+                if cfg_.namespace not in cfg_ns:
+                    cfg_ns[cfg_.namespace] = dict()
+                if cfg_.group_name not in cfg_ns[cfg_.namespace]:
+                    cfg_ns[cfg_.namespace][cfg_.group_name] = dict()
+                cfg_ns[cfg_.namespace][cfg_.group_name][
+                    cfg_.name] = cfg_.to_dict()
 
         open(CONF.command.outputfile, 'w').write(json.dumps(cfg_ns))
 
@@ -62,53 +70,54 @@ class OsloConfigSchemaManager(object):
             self.gen_schema()
             return
 
-        sync_map = {}
-        with open(CONF.command.syncfile) as f:
-            for line in f:
-                if line.startswith("#"):
-                    continue
-                kv = line.split("=")
-                sync_map[kv[0]] = kv[1].replace("\n", "")
+        sync_map = utils.file_to_configs(CONF.command.syncfile)
 
-        for k, v in sync_map.items():
-            out_file = '%s/%s.json' % (CONF.command.outputdir or '/tmp', k)
-            cmd = ('oslo-config-generator --config-file %s '
-                   '--output-file %s --output-format json' %
-                   (v, out_file))
-            print ("\nSyncing %s " % cmd)
-            import os
-            os.system(cmd)
+        for srv, confs in sync_map.items():
+            for conf, gen_conf in confs.items():
+                out_file = '%s/%s.json' % (CONF.command.outputdir or '/tmp',
+                                           conf)
+                cmd = ('oslo-config-generator --config-file %s '
+                       '--output-file %s --output-format json' %
+                       (gen_conf, out_file))
+                print ("\nSyncing %s " % cmd)
+                import os
+                os.system(cmd)
 
-            if CONF.command.dbsync:
-                import json
-                conf_dict = json.loads(open(out_file).read())
-                for grp, namespaces in conf_dict.items():
-                    for namespace, opts in namespaces.items():
-                        for name, opt in opts.items():
-                            conf_ = dict(
-                                namespace=namespace,
-                                group_name=grp,
-                                name=name,
-                                default_value=opt['default'],
-                                type=opt['type']['name'],
-                                help=opt['help'],
-                                required=opt['required'],
-                                secret=opt['secret'],
-                                mutable=opt['mutable']
-                            )
+                if CONF.command.dbsync:
+                    import json
+                    conf_dict = json.loads(open(out_file).read())
+                    for grp, namespaces in conf_dict.items():
+                        for namespace, opts in namespaces.items():
+                            for name, opt in opts.items():
+                                conf_ = dict(
+                                    namespace=namespace,
+                                    project=srv,
+                                    file_name=conf,
+                                    group_name=grp,
+                                    name=name.replace('-', '_'),
+                                    default_value=opt['default'],
+                                    type=opt['type']['name'],
+                                    help=opt['help'],
+                                    required=opt['required'],
+                                    secret=opt['secret'],
+                                    mutable=opt['mutable']
+                                )
 
-                            try:
-                                api.config_schema_create(None,
-                                                         conf_)
-                                _a = 'T'
-                            except exception.AlreadyExist:
-                                _a = 'F'
+                                try:
+                                    api.config_schema_create(None,
+                                                             conf_)
+                                    _a = 'T'
+                                except exception.AlreadyExist:
+                                    _a = 'F'
 
-                            msg = '[%s] %s::%s::%s' % (_a,
-                                                       namespace,
-                                                       grp,
-                                                       name)
-                            print (msg)
+                                msg = '[%s] %s::%s::%s::%s::%s' % (
+                                    _a,
+                                    srv,
+                                    conf,
+                                    namespace,
+                                    grp,
+                                    name)
+                                print (msg)
 
 
 class DBCommand(object):
@@ -180,6 +189,7 @@ def add_command_parsers(subparsers):
     parser.add_argument('-j', '--outputfile')
     parser.add_argument('-s', '--dbsync', action='store_true')
     parser.add_argument('-g', '--gen', action='store_true')
+    parser.add_argument('-n', '--by-namespace', action='store_true')
     parser.set_defaults(func=OsloConfigSchemaManager().sync)
 
     parser = subparsers.add_parser('status')

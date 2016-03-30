@@ -312,6 +312,34 @@ def service_worker_delete(context, _id):
     return IMPL.service_worker_delete(context, _id)
 
 
+def config_file_entry_create(context, values):
+    return IMPL.config_file_entry_create(context, values)
+
+
+def config_file_entry_update(context, _id, values):
+    return IMPL.config_file_entry_update(context, _id, values)
+
+
+def config_file_entry_get(context, _id):
+    return IMPL.config_file_entry_get(context, _id)
+
+
+def config_file_entry_get_by_name(context, name):
+    return IMPL.config_file_entry_get_by_name(context, name)
+
+
+def config_file_entry_get_all(context):
+    return IMPL.config_file_entry_get_all(context)
+
+
+def config_file_entry_get_all_by(context, **kwargs):
+    return IMPL.config_file_entry_get_all_by(context, **kwargs)
+
+
+def config_file_entry_delete(context, _id):
+    return IMPL.config_file_entry_delete(context, _id)
+
+
 #  config schema
 def config_schema_create(context, values):
     return IMPL.config_schema_create(context, values)
@@ -332,12 +360,17 @@ def config_schema_get_by_name(context, name):
 def config_schema_get_by(context,
                          namespace=None,
                          group=None,
-                         name=None):
-    return IMPL.config_schema_get_by(context, namespace, group, name)
+                         name=None,
+                         project=None):
+    return IMPL.config_schema_get_by(context, namespace, group, name, project)
 
 
 def config_schema_get_all(context):
     return IMPL.config_schema_get_all(context)
+
+
+def config_schema_get_all_by(context, **kwargs):
+    return IMPL.config_schema_get_all_by(context, **kwargs)
 
 
 def config_schema_delete(context, _id):
@@ -440,5 +473,11 @@ def infra_perspective_get(context):
     return IMPL.infra_perspective_get(context)
 
 
-def view_360(context):
-    return IMPL.view_360(context)
+def view_360(context, include_conf_file=False, include_status=False):
+    return IMPL.view_360(context,
+                         include_conf_file=include_conf_file,
+                         include_status=include_status)
+
+
+def get_status(context):
+    return IMPL.get_status(context)

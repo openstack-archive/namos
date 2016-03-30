@@ -61,19 +61,73 @@ class ConductorAPI(object):
 
     @wrapper_function
     def add_region(self, context, region):
-        self.client.call(context, 'add_region', region=region)
+        return self.client.call(
+            context,
+            'region_create',
+            region=region)
+
+    @wrapper_function
+    def region_get(self, context, region_id):
+        return self.client.call(
+            context,
+            'region_get',
+            region_id=region_id)
+
+    @wrapper_function
+    def region_update(self, context, region_id, region):
+        return self.client.call(
+            context,
+            'region_update',
+            region_id=region_id,
+            region=region)
 
     @wrapper_function
     def region_get_all(self, context):
-        return self.client.call(context, 'region_get_all')
+        return self.client.call(
+            context,
+            'region_get_all')
 
     @wrapper_function
-    def service_perspective_get(self, context, service_id,
-                                include_details=False):
-        return self.client.call(context,
-                                'service_perspective_get',
-                                service_id=service_id,
-                                include_details=include_details)
+    def region_delete(self, context, region_id):
+        return self.client.call(
+            context,
+            'region_delete',
+            region_id=region_id)
+
+    @wrapper_function
+    def add_service_node(self, context, service_node):
+        return self.client.call(
+            context,
+            'service_node_create',
+            service_node=service_node)
+
+    @wrapper_function
+    def service_node_get(self, context, service_node_id):
+        return self.client.call(
+            context,
+            'service_node_get',
+            service_node_id=service_node_id)
+
+    @wrapper_function
+    def service_node_update(self, context, service_node_id, service_node):
+        return self.client.call(
+            context,
+            'service_node_update',
+            service_node_id=service_node_id,
+            service_node=service_node)
+
+    @wrapper_function
+    def service_node_get_all(self, context):
+        return self.client.call(
+            context,
+            'service_node_get_all')
+
+    @wrapper_function
+    def service_node_delete(self, context, service_node_id):
+        return self.client.call(
+            context,
+            'service_node_delete',
+            service_node_id=service_node_id)
 
     @wrapper_function
     def device_perspective_get(self, context, device_id,
@@ -97,9 +151,15 @@ class ConductorAPI(object):
                                 'infra_perspective_get')
 
     @wrapper_function
-    def view_360(self, context):
+    def view_360(self, context,
+                 include_conf_file=False,
+                 include_status=False,
+                 include_file_entry=False):
         return self.client.call(context,
-                                'view_360')
+                                'view_360',
+                                include_conf_file=include_conf_file,
+                                include_status=include_status,
+                                include_file_entry=include_file_entry)
 
     @wrapper_function
     def config_get_by_name_for_service_worker(self,
@@ -112,6 +172,31 @@ class ConductorAPI(object):
                                 service_worker_id=service_worker_id,
                                 name=name,
                                 only_configured=only_configured)
+
+    @wrapper_function
+    def get_status(self, context):
+        return self.client.call(context,
+                                'get_status')
+
+    @wrapper_function
+    def ping(self, context, identification):
+        return self.client.call(context,
+                                'ping',
+                                identification=identification)
+
+    @wrapper_function
+    def config_file_get(self, context, config_file_id):
+        return self.client.call(context,
+                                'config_file_get',
+                                config_file_id=config_file_id)
+
+    @wrapper_function
+    def config_schema(self, context, project, with_file_link=False):
+        return self.client.call(context,
+                                'config_schema',
+                                project=project,
+                                with_file_link=with_file_link)
+
 
 if __name__ == '__main__':
     # from namos.common import config
@@ -134,13 +219,19 @@ if __name__ == '__main__':
         print (json.dumps(c.infra_perspective_get(context.RequestContext())))
 
     def print_view_360():
-        print (json.dumps(c.view_360(context.RequestContext())))
+        with open('/tmp/view_360.json', 'w') as file:
+            view = c.view_360(context.RequestContext(), True, True, True)
+            file.write(json.dumps(view))
 
-    def print_sample_conf():
-        for cf in c.config_get_by_name_for_service_worker(
-            context.RequestContext(),
-            service_worker_id='06e64e74-09b3-4721-8e5d-39ae40ed34f3'):
-            print ('%s %s' % (cf['name'], cf['value']))
+    def print_config_schema():
+        for s in ['nova', 'cinder', 'glance', 'neutron', 'heat', 'namos',
+                  'keystone', 'ceilometer', 'tacker']:
+            with open('/tmp/config_schema_%s.json' % s, 'w') as file:
+                file.write(json.dumps(c.config_schema(
+                    context.RequestContext(),
+                    project=s,
+                    with_file_link=True
+                )))
 
+    print_config_schema()
     print_view_360()
-    # print_sample_conf()

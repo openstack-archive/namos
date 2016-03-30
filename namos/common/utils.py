@@ -27,3 +27,51 @@ def find_status(sw, report_interval=60):
             status = True
 
     return status
+
+
+def _to_list(list_in_str):
+    '''string [a,b,c] -> python list [a, b ,c].'''
+    def strip_out(s):
+        start_idx = 0
+        end_idx = len(s)
+        if s[start_idx] == '[' \
+                or s[start_idx] == '\'' \
+                or s[start_idx] == '"':
+            start_idx += 1
+        if s[end_idx - 1] == ']' \
+                or s[end_idx - 1] == '\'' \
+                or s[end_idx - 1] == '"':
+            end_idx -= 1
+        return s[start_idx:end_idx]
+
+    l = []
+    for s in strip_out(list_in_str.strip()).split(','):
+        s = str(strip_out(s.strip()))
+        l.append(s)
+
+    return l
+
+
+def file_to_configs(file_path):
+    with open(file_path, 'r') as file:
+        section = ''
+        conf_dict = dict()
+
+        for line in file:
+            if len(line.strip()) == 0:
+                continue
+
+            if line.strip().startswith('#'):
+                continue
+
+            if line.strip().startswith('['):
+                section = line.replace('[', '').replace(']', '').strip()
+                conf_dict[section] = dict()
+                continue
+            if section:
+                kv = line.strip().split('=')
+                # TODO(mrkanag) if values required, enable it here
+                conf_dict[section][kv[0].strip()] = kv[1].strip().replace(
+                    "\n", "")
+
+    return conf_dict

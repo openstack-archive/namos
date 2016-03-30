@@ -20,6 +20,7 @@ from oslo_db import exception as db_exception
 from oslo_db.sqlalchemy import session as db_session
 
 from namos.common import exception
+from namos.common import utils
 from namos.db.sqlalchemy import models
 
 
@@ -439,6 +440,8 @@ def service_component_get_all_by_node_for_service(context,
         query = query.filter_by(service_id=service_id)
     if name is not None:
         query = query.filter_by(name=name)
+
+    query = query.order_by(models.ServiceComponent.type)
     return query.all()
 
 
@@ -487,6 +490,7 @@ def service_worker_get_by_host_for_service_component(context,
         filter_by(service_component_id=service_component_id)
     if host is not None:
         query = query.filter_by(host=host)
+
     return query.all()
 
 
@@ -532,10 +536,12 @@ def config_schema_get_by_name(context, name):
     return config
 
 
+# TODO(mrkanag) fix it to take **kwargs
 def config_schema_get_by(context,
                          namespace=None,
                          group=None,
-                         name=None):
+                         name=None,
+                         project=None):
     query = _model_query(context, models.OsloConfigSchema)
     if name is not None:
         query = query.filter_by(name=name)
@@ -543,6 +549,9 @@ def config_schema_get_by(context,
         query = query.filter_by(group_name=group)
     if namespace is not None:
         query = query.filter_by(namespace=namespace)
+    if project is not None:
+        query = query.filter_by(project=project)
+
     return query.all()
 
 
@@ -550,7 +559,7 @@ def config_schema_get_all(context):
     return _get_all(context, models.OsloConfigSchema)
 
 
-def _config_schema_get_all_by(context, **kwargs):
+def config_schema_get_all_by(context, **kwargs):
     return _get_all_by(context, models.OsloConfigSchema, **kwargs)
 
 
@@ -594,7 +603,7 @@ def config_get_by_name_for_service_worker(context,
         query = query.filter_by(name=name)
     elif only_configured:
         query = query.filter(
-            models.OsloConfig.oslo_config_file_id is not None)
+            models.OsloConfig.oslo_config_file_entry_id is not None)
     return query.all()
 
 
@@ -608,6 +617,44 @@ def _config_get_all_by(context, **kwargs):
 
 def config_delete(context, _id):
     return _delete(context, models.OsloConfig, _id)
+
+
+# Config File Entry
+
+def config_file_entry_create(context, values):
+    return _create(context, models.OsloConfigFileEntry(), values)
+
+
+def config_file_entry_update(context, _id, values):
+    return _update(context, models.OsloConfigFileEntry, _id, values)
+
+
+def config_file_entry_get(context, _id):
+    config_file_entry = _get(context, models.OsloConfigFileEntry, _id)
+    if config_file_entry is None:
+        raise exception.ConfigNotFound(config_file_entry_id=_id)
+
+    return config_file_entry
+
+
+def config_file_entry_get_by_name(context, name):
+    config_file_entry = _get_by_name(context, models.OsloConfigFileEntry, name)
+    if config_file_entry is None:
+        raise exception.ConfigNotFound(config_file_entry_id=name)
+
+    return config_file_entry
+
+
+def config_file_entry_get_all(context):
+    return _get_all(context, models.OsloConfigFileEntry)
+
+
+def config_file_entry_get_all_by(context, **kwargs):
+    return _get_all_by(context, models.OsloConfigFileEntry, **kwargs)
+
+
+def config_file_entry_delete(context, _id):
+    return _delete(context, models.OsloConfigFileEntry, _id)
 
 
 # Config file
@@ -645,6 +692,18 @@ def config_file_get_by_name_for_service_node(
         query = query.filter_by(name=name)
 
     return query.all()
+
+
+def _config_file_id_get_for_service_component(context, service_component_id):
+    entries = config_file_entry_get_all_by(
+        context,
+        service_component_id=service_component_id)
+    files = []
+    for e in entries:
+        if e.oslo_config_file_id not in files:
+            files.append(e.oslo_config_file_id)
+
+    return files
 
 
 def config_file_get_all(context):
@@ -889,7 +948,7 @@ def infra_perspective_get(context):
     return infra_perspective
 
 
-def view_360(context):
+def view_360(context, include_conf_file=False, include_status=False):
     view = dict()
 
     view['region'] = dict()
@@ -901,6 +960,8 @@ def view_360(context):
     view['device_driver_class'] = dict()
     view['device_endpoint'] = dict()
     view['device'] = dict()
+    view['config_file'] = dict()
+    view['status'] = dict()
 
     region_list = region_get_all(context)
     for rg in region_list:
@@ -940,15 +1001,23 @@ def view_360(context):
                     'service_component'][srv_cmp.id] = dict()
                 view['region'][rg.id]['service_node'][srv_nd.id][
                     'service_component'][srv_cmp.id]['config_file'] = dict()
-                cfg_fl_lst = config_file_get_by_name_for_service_node(
+                cfg_fl_lst = _config_file_id_get_for_service_component(
                     context,
-                    service_node_id=srv_nd.id
+                    service_component_id=srv_cmp.id
                 )
-                for cfg_fl in cfg_fl_lst:
+                for cfg_fl_id in cfg_fl_lst:
                     # config file
+                    if include_conf_file:
+                        view['config_file'][cfg_fl_id] = config_file_get(
+                            context,
+                            cfg_fl_id
+                        )
+                    else:
+                        view['config_file'][cfg_fl_id] = dict()
+
                     view['region'][rg.id]['service_node'][srv_nd.id][
                         'service_component'][srv_cmp.id][
-                        'config_file'][cfg_fl.name] = cfg_fl.file
+                        'config_file'][cfg_fl_id] = dict()
 
                 view['region'][rg.id]['service_node'][srv_nd.id][
                     'service_component'][srv_cmp.id]['service'] = srv_id
@@ -1025,7 +1094,38 @@ def view_360(context):
                                 'service_worker'][srv_wkr.id]['device_driver'][
                                 dvc_drv.id]['device'] = dvc_id
 
+    if include_status:
+        view['status'] = get_status(context)
+
     return view
+
+
+def get_status(context):
+    sr = {}
+    for sn in service_node_get_all(context):
+        for sc in service_component_get_all_by_node_for_service(
+            context,
+            node_id=sn.id
+        ):
+            service = service_get(context, sc.service_id)
+            for sw in service_worker_get_by_host_for_service_component(
+                context,
+                service_component_id=sc.id
+            ):
+                # TODO(mrkanag) Move this to db layer and query non deleted
+                # if sw.deleted_at is not None:
+                #     continue
+
+                sr[sw.pid] = (
+                    dict(node=sn.name,
+                         type=sc.type,
+                         service=service.name,
+                         component=sw.name,
+                         status=utils.find_status(sw),
+                         is_launcher=sw.is_launcher))
+
+    return sr
+
 
 if __name__ == '__main__':
     from namos.common import config
@@ -1053,4 +1153,4 @@ if __name__ == '__main__':
     # print perp_json
 
     import json
-    print (json.dumps(view_360(None)))
+    print (json.dumps(view_360(None, True, True)))
