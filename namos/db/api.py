@@ -484,5 +484,9 @@ def view_360(context, include_conf_file=False, include_status=False):
                          include_status=include_status)
 
 
-def get_status(context):
-    return IMPL.get_status(context)
+def get_status(context, node=None, service=None, type=None, component=None):
+    return IMPL.get_status(context, node, service, type, component)
+
+
+def cleanup(context, service_component_id=None, dead_since=300):
+    return IMPL.cleanup(context, service_component_id, dead_since)

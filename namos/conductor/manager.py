@@ -69,7 +69,7 @@ class ConductorManager(object):
         return db_api.region_delete(context. region_id)
 
     @request_context
-    def add_service_node(self, context, service_node):
+    def service_node_create(self, context, service_node):
         return db_api.service_node_create(context, service_node)
 
     @request_context
@@ -137,12 +137,12 @@ class ConductorManager(object):
 
         # TODO(mrkanag) Move this to periofic task, before deleting each
         # sw, make usre its created atleast 5 mins before
-        # sp.cleanup(service_component_id)
+        sp.cleanup(service_component_id)
         return service_worker_id
 
     def _regisgration_ackw(self, context, identification):
         client = messaging.get_rpc_client(
-            topic=self.os_namos_listener_topic(identification),
+            topic=self._os_namos_listener_topic(identification),
             version=self.RPC_API_VERSION,
             exchange=namos_config.PROJECT_NAME)
         client.cast(context,
@@ -150,12 +150,12 @@ class ConductorManager(object):
                     identification=identification)
         LOG.info("REGISTER [%s] ACK" % identification)
 
-    def os_namos_listener_topic(self, identification):
+    def _os_namos_listener_topic(self, identification):
         return 'namos.CONF.%s' % identification
 
     def _ping(self, context, identification):
         client = messaging.get_rpc_client(
-            topic=self.os_namos_listener_topic(identification),
+            topic=self._os_namos_listener_topic(identification),
             version=self.RPC_API_VERSION,
             exchange=namos_config.PROJECT_NAME,
             timeout=1)
@@ -170,9 +170,9 @@ class ConductorManager(object):
             LOG.info("PING [%s] FAILED" % identification)
             return False
 
-    def update_config_file(self, context, identification, name, content):
+    def _update_config_file(self, context, identification, name, content):
         client = messaging.get_rpc_client(
-            topic=self.os_namos_listener_topic(identification),
+            topic=self._os_namos_listener_topic(identification),
             version=self.RPC_API_VERSION,
             exchange=namos_config.PROJECT_NAME,
             timeout=2)
@@ -304,10 +304,10 @@ class ConductorManager(object):
                         # TODO(mrkanag) is ping() better option instead?
                         if utils.find_status(sw):
                             try:
-                                self.update_config_file(context,
-                                                        sw.pid,
-                                                        cf.name,
-                                                        cf.file)
+                                self._update_config_file(context,
+                                                         sw.pid,
+                                                         cf.name,
+                                                         cf.file)
                                 cf['status'] = 'completed'
                                 return cf
                             except:  # noqa
@@ -448,8 +448,8 @@ class ServiceProcessor(object):
             service_worker = db_api.service_worker_create(
                 self.context,
                 # TODO(mrkanag) Fix the name, device driver proper !
-                dict(name='%s@%s' % (self.registration_info['pid'],
-                                     service_component.name),
+                dict(name='%s@%s' % (service_component.name,
+                                     self.registration_info['pid']),
                      pid=self.registration_info['identification'],
                      host=self.registration_info['host'],
                      service_component_id=service_component.id,
@@ -470,37 +470,7 @@ class ServiceProcessor(object):
 
     def cleanup(self, service_component_id):
         # clean up the dead service workers
-        #  TODO(mrkanag) Make this into thread
-        service_workers = \
-            db_api.service_worker_get_all_by(
-                self.context,
-                service_component_id=service_component_id
-            )
-
-        for srv_wkr in service_workers:
-            # TODO(mrkanag) Move this to db layer and query non deleted entries
-            if srv_wkr.deleted_at is not None:
-                continue
-
-            # TODO(mrkanag) is this interval ok
-            if utils.find_status(srv_wkr, report_interval=60):
-                LOG.info('Service Worker %s is live'
-                         % srv_wkr.id)
-                continue
-            else:
-                confs = db_api.config_get_by_name_for_service_worker(
-                    self.context,
-                    service_worker_id=srv_wkr.id
-                )
-
-                for conf in confs:
-                    db_api.config_delete(self.context, conf.id)
-                    LOG.info('Config %s is deleted'
-                             % conf.id)
-
-                db_api.service_worker_delete(self.context, srv_wkr.id)
-                LOG.info('Service Worker %s is deleted'
-                         % srv_wkr.id)
+        db_api.cleanup(self.context, service_component_id)
 
 
 class ConfigProcessor(object):

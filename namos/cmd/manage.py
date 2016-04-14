@@ -30,6 +30,9 @@ MANAGE_COMMAND_NAME = 'namos-manage'
 
 
 class HeartBeat(object):
+    def cleanup(self):
+        api.cleanup(None)
+
     def report_status(self):
         print_format = "%-20s%-15s%-15s%-35s%-10s"
         strip = 90 * '-'
@@ -40,12 +43,19 @@ class HeartBeat(object):
                               'Component',
                               'Status'))
         print(strip)
-        for k, s in api.get_status(None).items():
+        for k, s in api.get_status(
+            None,
+            CONF.command.node,
+            CONF.command.service,
+            CONF.command.type,
+            CONF.command.component
+        ).items():
+            # if not CONF.command.component and s['is_launcher']:
             print(print_format % (s['node'],
                                   s['type'],
                                   s['service'],
-                                  s['component'],
-                                  s['status']))
+                                  s['worker'],
+                                  ':)' if s['status'] else 'XXX'))
         print(strip)
 
 
@@ -193,7 +203,14 @@ def add_command_parsers(subparsers):
     parser.set_defaults(func=OsloConfigSchemaManager().sync)
 
     parser = subparsers.add_parser('status')
+    parser.add_argument('-n', '--node')
+    parser.add_argument('-s', '--service')
+    parser.add_argument('-c', '--component')
+    parser.add_argument('-t', '--type')
     parser.set_defaults(func=HeartBeat().report_status)
+
+    parser = subparsers.add_parser('cleanup')
+    parser.set_defaults(func=HeartBeat().cleanup)
 
 command_opt = cfg.SubCommandOpt('command',
                                 title='Command',

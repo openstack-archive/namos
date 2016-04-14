@@ -95,7 +95,7 @@ class ConductorAPI(object):
             region_id=region_id)
 
     @wrapper_function
-    def add_service_node(self, context, service_node):
+    def service_node_create(self, context, service_node):
         return self.client.call(
             context,
             'service_node_create',
@@ -248,6 +248,6 @@ if __name__ == '__main__':
                                         'dcf0f17b-99f6-49e9-8d5f-23b3ad1167dc',
                                         content))
 
-    # print_config_schema()
-    # print_view_360()
-    sample_config_update()
+    print_config_schema()
+    print_view_360()
+    # sample_config_update()
