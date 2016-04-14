@@ -270,6 +270,11 @@ def service_component_get_all(context):
     return IMPL.service_component_get_all(context)
 
 
+def service_component_get_all_by_config_file(context, config_file_id):
+    return IMPL.service_component_get_all_by_config_file(context,
+                                                         config_file_id)
+
+
 def service_component_delete(context, _id):
     return IMPL.service_component_delete(context, _id)
 

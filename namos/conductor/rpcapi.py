@@ -191,6 +191,13 @@ class ConductorAPI(object):
                                 config_file_id=config_file_id)
 
     @wrapper_function
+    def config_file_update(self, context, config_file_id, content):
+        return self.client.call(context,
+                                'config_file_update',
+                                config_file_id=config_file_id,
+                                content=content)
+
+    @wrapper_function
     def config_schema(self, context, project, with_file_link=False):
         return self.client.call(context,
                                 'config_schema',
@@ -233,5 +240,14 @@ if __name__ == '__main__':
                     with_file_link=True
                 )))
 
-    print_config_schema()
-    print_view_360()
+    def sample_config_update():
+        with open('/tmp/sample.conf', 'r') as content_file:
+            content = content_file.read()
+
+            print (c.config_file_update(context.RequestContext(),
+                                        'dcf0f17b-99f6-49e9-8d5f-23b3ad1167dc',
+                                        content))
+
+    # print_config_schema()
+    # print_view_360()
+    sample_config_update()

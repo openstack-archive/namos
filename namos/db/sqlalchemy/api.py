@@ -445,6 +445,17 @@ def service_component_get_all_by_node_for_service(context,
     return query.all()
 
 
+def service_component_get_all_by_config_file(context, config_file_id):
+    query = _model_query(context,
+                         models.OsloConfigFileEntry.service_component_id). \
+        filter_by(oslo_config_file_id=config_file_id).distinct()
+    query_sc = _model_query(context, models.ServiceComponent).filter(
+        models.ServiceComponent.id.in_(query)
+    )
+
+    return query_sc.all()
+
+
 def service_component_get_all(context):
     return _get_all(context, models.ServiceComponent)
 
@@ -1152,5 +1163,12 @@ if __name__ == '__main__':
     # perp_json = json.dumps(persp, indent=4)
     # print perp_json
 
-    import json
-    print (json.dumps(view_360(None, True, True)))
+    # import json
+    # print (json.dumps(view_360(None, True, True)))
+
+    sc = service_component_get_all_by_config_file(
+        None,
+        '03cccfb4-5433-47fc-af3c-63869f270d78')
+    print (service_worker_get_all_by(None,
+                                     service_component_id=sc[0].id,
+                                     is_launcher=True))

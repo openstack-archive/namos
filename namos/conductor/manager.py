@@ -141,21 +141,24 @@ class ConductorManager(object):
         return service_worker_id
 
     def _regisgration_ackw(self, context, identification):
-        client = messaging.get_rpc_client(topic='namos.CONF.%s' %
-                                                identification,
-                                          version=self.RPC_API_VERSION,
-                                          exchange=namos_config.PROJECT_NAME)
+        client = messaging.get_rpc_client(
+            topic=self.os_namos_listener_topic(identification),
+            version=self.RPC_API_VERSION,
+            exchange=namos_config.PROJECT_NAME)
         client.cast(context,
                     'regisgration_ackw',
                     identification=identification)
         LOG.info("REGISTER [%s] ACK" % identification)
 
-    @request_context
-    def ping(self, context, identification):
+    def os_namos_listener_topic(self, identification):
+        return 'namos.CONF.%s' % identification
+
+    def _ping(self, context, identification):
         client = messaging.get_rpc_client(
-            topic='namos.CONF.%s' % identification,
+            topic=self.os_namos_listener_topic(identification),
             version=self.RPC_API_VERSION,
-            exchange=namos_config.PROJECT_NAME)
+            exchange=namos_config.PROJECT_NAME,
+            timeout=1)
         try:
             client.call(context,
                         'ping_me',
@@ -166,6 +169,19 @@ class ConductorManager(object):
         except:  # noqa
             LOG.info("PING [%s] FAILED" % identification)
             return False
+
+    def update_config_file(self, context, identification, name, content):
+        client = messaging.get_rpc_client(
+            topic=self.os_namos_listener_topic(identification),
+            version=self.RPC_API_VERSION,
+            exchange=namos_config.PROJECT_NAME,
+            timeout=2)
+        client.call(context,
+                    'update_config_file',
+                    identification=identification,
+                    name=name,
+                    content=content)
+        LOG.info("CONF FILE [%s] UPDATE [%s] DONE" % (name, identification))
 
     @request_context
     def heart_beat(self, context, identification, dieing=False):
@@ -260,6 +276,46 @@ class ConductorManager(object):
             oslo_config_file_id=config_file_id
         )
         return dict(file=file, entry=cfg_es)
+
+    @request_context
+    def config_file_update(self, context, config_file_id, content):
+        # update the db
+        db_api.config_file_update(context, config_file_id, {'file': content})
+        cf = self.config_file_get(context, config_file_id)['file']
+
+        # update the corresponding file in the respetive node
+        sc_list = db_api.service_component_get_all_by_config_file(
+            context,
+            config_file_id
+        )
+
+        # TODO(mrkanag) update the config file entries
+
+        # Find the first active service workr launcher to update the conf file
+        if sc_list:
+            for sc in sc_list:
+                sw_list = db_api.service_worker_get_all_by(
+                    context,
+                    service_component_id=sc_list[0].id,
+                    is_launcher=True
+                )
+                if sw_list:
+                    for sw in sw_list:
+                        # TODO(mrkanag) is ping() better option instead?
+                        if utils.find_status(sw):
+                            try:
+                                self.update_config_file(context,
+                                                        sw.pid,
+                                                        cf.name,
+                                                        cf.file)
+                                cf['status'] = 'completed'
+                                return cf
+                            except:  # noqa
+                                # try on next available sw
+                                pass
+
+        cf['status'] = 'failed'
+        return cf
 
     @request_context
     def config_schema(self, context, project, with_file_link=False):

@@ -32,7 +32,8 @@ SCvsNT = dict(
                 'heat-engine',
                 'namos-manager',
                 'ceilometer-api', 'ceilometer-polling', 'ceilometer-collector',
-                'ceilometer-agent-notification',
+                'ceilometer-agent-notification', 'aodh-evaluator',
+                'aodh-notifier', 'aodh-api', 'aodh-listener',
                 'tacker-server'
                 ],
     compute=['nova-compute', 'neutron-openvswitch-agent',

@@ -91,7 +91,7 @@ def get_rpc_server(host, exchange, topic, version, endpoint):
                                          serializer=serializer)
 
 
-def get_rpc_client(topic, exchange, version, retry=None, **kwargs):
+def get_rpc_client(topic, exchange, version, retry=None, timeout=60, **kwargs):
     """Return a configured olso.messaging RPCClient."""
     oslo_messaging.set_transport_defaults(exchange)
     target = oslo_messaging.Target(version=version,
@@ -101,7 +101,8 @@ def get_rpc_client(topic, exchange, version, retry=None, **kwargs):
     return oslo_messaging.RPCClient(transport, target,
                                     serializer=serializer,
                                     retry=retry,
-                                    version_cap=version)
+                                    version_cap=version,
+                                    timeout=timeout)
 
 
 def cleanup():
