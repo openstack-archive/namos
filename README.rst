@@ -50,7 +50,7 @@ console scripts of respective service components.
 
 To find the 360 view of OpenStack deployment
 --------------------------------------------
-Run http://localhost:8888/v1/view_360
+Run http://localhost:9999/v1/view_360
 
 It provides 360 degree view under region->service_node in the response. In
 addition, gives the current live status of each servicec components.
