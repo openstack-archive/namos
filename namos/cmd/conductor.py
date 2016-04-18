@@ -16,7 +16,7 @@
 #    under the License.
 
 """
-The Namos Infra Management Service
+The Namos Manager
 """
 
 import eventlet

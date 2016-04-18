@@ -405,7 +405,7 @@ def _append_opts_json(f, group, namespaces):
             f[group][namespace][opt.name]['deprecated'] = []
             for d in opt.deprecated_opts:
                 f[group][namespace][opt.name]['deprecated'].append(
-                 (d.group or 'DEFAULT', d.name or opt.dest))
+                    (d.group or 'DEFAULT', d.name or opt.dest))
 
             f[group][namespace][opt.name][
                 'deprecated_for_removal'] = opt.deprecated_for_removal

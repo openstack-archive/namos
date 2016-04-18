@@ -21,7 +21,6 @@ from namos.common import exception
 from namos.common import utils
 
 from namos.db import api
-from namos.db import sample
 from namos.db.sqlalchemy import migration
 
 
@@ -154,6 +153,7 @@ class DBCommand(object):
         migration.history()
 
     def demo_data(self):
+        from namos.db import sample
         if CONF.command.purge:
             sample.purge_demo_data()
         else:
