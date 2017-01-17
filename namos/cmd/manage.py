@@ -88,7 +88,7 @@ class OsloConfigSchemaManager(object):
                 cmd = ('oslo-config-generator --config-file %s '
                        '--output-file %s --output-format json' %
                        (gen_conf, out_file))
-                print ("\nSyncing %s " % cmd)
+                print("\nSyncing %s " % cmd)
                 import os
                 os.system(cmd)
 
@@ -126,7 +126,7 @@ class OsloConfigSchemaManager(object):
                                     namespace,
                                     grp,
                                     name)
-                                print (msg)
+                                print(msg)
 
 
 class DBCommand(object):

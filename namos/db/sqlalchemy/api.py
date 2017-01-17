@@ -1206,6 +1206,6 @@ if __name__ == '__main__':
     sc = service_component_get_all_by_config_file(
         None,
         '03cccfb4-5433-47fc-af3c-63869f270d78')
-    print (service_worker_get_all_by(None,
-                                     service_component_id=sc[0].id,
-                                     is_launcher=True))
+    print(service_worker_get_all_by(None,
+                                    service_component_id=sc[0].id,
+                                    is_launcher=True))

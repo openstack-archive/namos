@@ -223,7 +223,7 @@ if __name__ == '__main__':
                       'id': 'd7dcd175-27ef-46b5-997f-e6e572f320af'})
 
     def print_infra():
-        print (json.dumps(c.infra_perspective_get(context.RequestContext())))
+        print(json.dumps(c.infra_perspective_get(context.RequestContext())))
 
     def print_view_360():
         with open('/tmp/view_360.json', 'w') as file:
@@ -244,9 +244,9 @@ if __name__ == '__main__':
         with open('/tmp/sample.conf', 'r') as content_file:
             content = content_file.read()
 
-            print (c.config_file_update(context.RequestContext(),
-                                        'dcf0f17b-99f6-49e9-8d5f-23b3ad1167dc',
-                                        content))
+            print(c.config_file_update(context.RequestContext(),
+                                       'dcf0f17b-99f6-49e9-8d5f-23b3ad1167dc',
+                                       content))
 
     print_config_schema()
     print_view_360()
