@@ -58,7 +58,7 @@ def create_schema(config=None, engine=None):
 # Following commands are alembic commands
 
 def _alembic_config():
-    # TODO(kanagaraj-manickam): It is an hack to use database.connection
+    # TODO(kanagaraj-manickam): It is a hack to use database.connection
     # for all alembic related commands
 
     path = os.path.join(os.path.dirname(__file__), 'alembic.ini')

@@ -101,7 +101,7 @@ class Region(BASE,
              Extra):
     __tablename__ = 'region'
 
-    # Its of type String to match with keystone region id
+    # It's of type String to match with keystone region id
     # TODO(mrkanag) make this as non nullable
     keystone_region_id = sqlalchemy.Column(
         sqlalchemy.String(255),

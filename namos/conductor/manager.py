@@ -321,7 +321,7 @@ class ConductorManager(object):
 
     @request_context
     def config_schema(self, context, project, with_file_link=False):
-        # provide the manage oslo_config_schema --gen
+        # provide to manage oslo_config_schema --gen
         file_schema = dict()
         for cfg_s in db_api.config_schema_get_all_by(context, project=project):
             if cfg_s.file_name not in file_schema:
