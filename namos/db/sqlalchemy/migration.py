@@ -48,7 +48,7 @@ def create_schema(config=None, engine=None):
         engine = sqla_api.get_engine()
 
     if version(engine=engine) is not None:
-        raise db_exc.DbMigrationError("DB schema is already under version"
+        raise db_exc.DBMigrationError("DB schema is already under version"
                                       " control. Use upgrade instead")
 
     models.BASE.metadata.create_all(engine)
