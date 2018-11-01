@@ -181,7 +181,7 @@ class ConductorManager(object):
         ))
 
         # TODO(mrkanag) Move this to periofic task, before deleting each
-        # sw, make usre its created atleast 5 mins before
+        # sw, make user its created atleast 5 mins before
         sp.cleanup(service_component_id)
         return service_worker_id
 
