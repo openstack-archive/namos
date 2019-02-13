@@ -57,14 +57,14 @@ class JsonPayloadSerializer(oslo_messaging.NoOpSerializer):
         return jsonutils.to_primitive(entity, convert_instances=True)
 
 
-def get_transport(url=None, optional=False, cache=True):
+def get_rpc_transport(url=None, optional=False, cache=True):
     """Initialise the olso.messaging layer."""
     global TRANSPORTS, DEFAULT_URL
     cache_key = url or DEFAULT_URL
     transport = TRANSPORTS.get(cache_key)
     if not transport or not cache:
         try:
-            transport = oslo_messaging.get_transport(cfg.CONF, url,
+            transport = oslo_messaging.get_rpc_transport(cfg.CONF, url,
                                                      aliases=_ALIASES)
         except oslo_messaging.InvalidTransportURL as e:
             if not optional or e.url:
@@ -85,7 +85,7 @@ def get_rpc_server(host, exchange, topic, version, endpoint):
                                    topic=topic,
                                    version=version)
     serializer = RequestContextSerializer(JsonPayloadSerializer())
-    transport = get_transport(optional=True)
+    transport = get_rpc_transport(optional=True)
     return oslo_messaging.get_rpc_server(transport, target,
                                          [endpoint], executor='eventlet',
                                          serializer=serializer)
@@ -97,7 +97,7 @@ def get_rpc_client(topic, exchange, version, retry=None, timeout=60, **kwargs):
     target = oslo_messaging.Target(version=version,
                                    topic=topic, **kwargs)
     serializer = RequestContextSerializer(JsonPayloadSerializer())
-    transport = get_transport(optional=True)
+    transport = get_rpc_transport(optional=True)
     return oslo_messaging.RPCClient(transport, target,
                                     serializer=serializer,
                                     retry=retry,
