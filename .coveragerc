@@ -1,7 +1,0 @@
-[run]
-branch = True
-source = namos
-omit = namos/openstack/*
-
-[report]
-ignore_errors = True
